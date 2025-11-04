@@ -2,7 +2,7 @@ import React from "react";
 
 export default function RecentSales({ sales = [] }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 w-full">
+    <div className="bg-white border border-gray-200 rounded-lg p-8 w-full">
       <h3 className="text-lg font-semibold mb-4">Recent Sales</h3>
       <ul className="space-y-4">
         {sales.map((s, i) => (
@@ -20,7 +20,7 @@ export default function RecentSales({ sales = [] }) {
                 <div className="text-sm text-gray-500">{s.sub}</div>
               </div>
             </div>
-            <div className="font-semibold text-gray-800">${s.amount.toLocaleString()}</div>
+            <div className="font-semibold ml-2 text-gray-800">₹{s.amount.toLocaleString()}</div>
           </li>
         ))}
         {sales.length === 0 && <li className="text-center text-gray-500">No recent transactions</li>}

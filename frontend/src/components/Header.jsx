@@ -1,13 +1,12 @@
 import React from "react";
 
-/*
-  Header is sticky within the main content. Its z-index is below the sidebar (z-40 < z-50)
-  so it will not overlap the fixed sidebar.
-*/
-export default function Header() {
+export default function Header({ onToggleSidebar, sidebarOpen }) {
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between px-8 py-4 border-b border-gray-200 bg-white">
-      <div className="w-full max-w-3xl">
+    <header className="fixed top-0 left-0 right-0 h-16 z-50 flex items-center justify-between px-8 border-b border-gray-200 bg-white">
+        <div className="px-1 py-10 border-b border-gray-200 font-semibold text-lg text-gray-900 select-none whitespace-nowrap">
+          Stitch - Design
+        </div>
+      <div className="w-full pl-78 max-w-4xl">
         <div className="relative">
           <input
             className="w-full pl-4 pr-10 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm"
