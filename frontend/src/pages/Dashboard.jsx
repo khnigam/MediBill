@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import StatCard from "../components/StatCard";
 import LowStockTable from "../components/LowStockTable";
@@ -17,7 +16,7 @@ export default function Dashboard() {
     <div className="min-h-screen flex">
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
       <div className="flex-1 flex flex-col min-h-screen">
-        <Header onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
+
         <main className={`p-3 max-w-7xl mx-auto transition-all duration-300 ${sidebarOpen ? "ml-0" : "ml-0"}`}>
           <h1 className="text-3xl font-semibold text-gray-900 mb-6">Dashboard</h1>
 
@@ -30,7 +29,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-4 gap-6 mb-6">
                 <StatCard
                   title="Total Sales (This Month)"
-                  value={`$${(summary?.totalSales || 0).toLocaleString()}`}
+                  value={`₹${(summary?.totalSales || 0).toLocaleString()}`}
                   sub={<span className="text-green-600">↗ {summary?.totalSalesChange}</span>}
                 />
                 <StatCard
