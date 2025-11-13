@@ -1,412 +1,170 @@
 import React, { useState } from "react";
 
-const customers = ["Customer A", "Customer B", "Customer C"];
+const paymentMethods = ["Cash", "Card", "UPI", "Net Banking"];
 
-const batchesByMedicine = {
-  "Paracetamol 500mg": ["P500-A01", "P500-B02"],
-  "Ibuprofen 200mg": ["I200-A01", "I200-B02"],
+const emptyRow = {
+  medicineName: "",
+  batch: "",
+  qty: 0,
+  unitPrice: 0,
+  discountPercent: 0,
+  location: "",
 };
 
-const initialItems = [
-  {
-    medicineName: "Paracetamol 500mg",
-    batch: "P500-A01",
-    qty: 1,
-    unitPrice: 12.5, // selling price (can differ from purchase)
-    location: "Shelf A-101",
-  },
-  ...Array(7).fill({
-    medicineName: "",
-    batch: "",
-    qty: 0,
-    unitPrice: 0,
-    location: "e.g. Rack A1",
-  }),
-];
+// default 8 empty rows
+const initialRows = Array.from({ length: 8 }, () => ({ ...emptyRow }));
 
-export default function EnterSale() {
-  const [date, setDate] = useState(() => {
-    const d = new Date();
-    return d.toISOString().substring(0, 10);
-  });
+export default function EnterSalePage() {
+  const [date, setDate] = useState("");
   const [billNumber, setBillNumber] = useState("");
   const [customer, setCustomer] = useState("");
-  const [items, setItems] = useState(initialItems);
-  const [saving, setSaving] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [rows, setRows] = useState(initialRows);
 
-  const updateItem = (index, field, value) => {
-    setItems((prev) => {
-      const newItems = [...prev];
-      let item = { ...newItems[index] };
-      if (field === "medicineName") {
-        item.medicineName = value;
-        item.batch = "";
-        item.qty = 0;
-        item.unitPrice = 0;
-      } else if (field === "batch") {
-        item.batch = value;
-      } else if (field === "qty") {
-        item.qty = Number(value);
-      } else if (field === "unitPrice") {
-        item.unitPrice = Number(value);
-      } else if (field === "location") {
-        item.location = value;
-      }
-      newItems[index] = item;
-      return newItems;
-    });
+  const handleRowChange = (index, field, value) => {
+    const newRows = [...rows];
+    if (field === "qty" || field === "unitPrice" || field === "discountPercent") {
+      value = Number(value);
+      if (isNaN(value)) value = 0;
+    }
+    newRows[index] = { ...newRows[index], [field]: value };
+    setRows(newRows);
   };
 
-  const addAnotherItem = () => {
-    setItems((prev) => [
-      ...prev,
-      { medicineName: "", batch: "", qty: 0, unitPrice: 0, location: "e.g. Rack A1" },
-    ]);
+  const addAnotherItem = () => setRows([...rows, { ...emptyRow }]);
+
+  const removeRow = (index) => {
+    const newRows = rows.filter((_, i) => i !== index);
+    setRows(newRows.length ? newRows : [{ ...emptyRow }]);
   };
 
-  const subtotal = items.reduce((acc, item) => acc + item.qty * item.unitPrice, 0);
-  const tax = subtotal * 0.05; // keep same 5% for parity; change if your GST differs
+  const rowTotal = (row) => {
+    const line = row.qty * row.unitPrice;
+    const discount = (row.discountPercent / 100) * line;
+    return line - discount;
+  };
+
+  const subtotal = rows.reduce((acc, r) => acc + rowTotal(r), 0);
+  const tax = subtotal * 0.05; // 5% tax
   const grandTotal = subtotal + tax;
 
-  // Demo stock/meta (can be wired to real data later)
-  const currentStock = 1250;
-  const expiry = "Dec 2025";
-  const unitMrp = 12.5;
-
-  // Simulated APIs
-  const fakeApiUpdateItem = (item) =>
-    new Promise((resolve) => setTimeout(() => resolve({ success: true, item }), 300));
-
-  const fakeApiSaveSale = (data) =>
-    new Promise((resolve) => setTimeout(() => resolve({ success: true, data }), 500));
-
-  const saveSale = async () => {
-    if (!billNumber.trim()) {
-      alert("Please enter a bill number.");
-      return;
-    }
-    if (!customer) {
-      alert("Please select a customer.");
-      return;
-    }
-    const validItems = items.filter(
-      (item) =>
-        item.medicineName &&
-        item.batch &&
-        item.qty > 0 &&
-        item.unitPrice > 0 &&
-        item.location.trim()
-    );
-    if (validItems.length === 0) {
-      alert("Please add at least one valid sale item.");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      for (const item of validItems) {
-        // eslint-disable-next-line no-await-in-loop
-        const response = await fakeApiUpdateItem(item);
-        if (!response.success) {
-          alert("Failed to update an item.");
-          setSaving(false);
-          return;
-        }
-      }
-      const saveResponse = await fakeApiSaveSale({
-        date,
-        billNumber,
-        customer,
-        items: validItems,
-        totals: { subtotal, tax, grandTotal },
-      });
-      if (saveResponse.success) {
-        alert("Sale saved successfully!");
-        // Reset form
-        setBillNumber("");
-        setCustomer("");
-        setItems(initialItems);
-      } else {
-        alert("Failed to save sale.");
-      }
-    } catch (e) {
-      alert("An error occurred while saving the sale.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
-    <div
-      style={{
-        position: "relative",
-        left: "calc(50% - 50vw)",
-        marginLeft: 0,
-        maxWidth: 900,
-        margin: "auto",
-        padding: 16,
-        fontFamily: "Arial, sans-serif",
-        marginTop: "80px", // keep content below fixed header (h-16)
-      }}
-    >
-      <h2>Enter Sale</h2>
-      <p>Fill in the bill details and add medicine items to the sale list.</p>
-
-      {/* Full-bleed section like in Purchase */}
-      <section
-        style={{
-          position: "relative",
-          left: "calc(50% - 50vw)",
-          marginLeft: 50,
-          width: "95vw",
-          border: "1px solid #ddd",
-          borderRadius: 10,
-          padding: 16,
-          backgroundColor: "#fff",
-          marginBottom: 24,
-          marginTop: 30,
-          boxSizing: "border-box",
-        }}
-      >
-        <h3>Bill Details</h3>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <label style={{ flex: "1 1 150px" }}>
-            Date
-            <br />
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              style={{ width: "100%", padding: 6 }}
-            />
-          </label>
-          <label style={{ flex: "2 1 250px" }}>
-            Bill Number
-            <br />
-            <input
-              type="text"
-              placeholder="e.g., BILL-2024-001"
-              value={billNumber}
-              onChange={(e) => setBillNumber(e.target.value)}
-              style={{ width: "100%", padding: 6 }}
-            />
-          </label>
-          <label style={{ flex: "2 1 250px" }}>
-            Customer
-            <br />
-            <select
-              value={customer}
-              onChange={(e) => setCustomer(e.target.value)}
-              style={{ width: "100%", padding: 6 }}
-            >
-              <option value="">Select a customer</option>
-              {customers.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <table
-          style={{
-            width: "100%",
-            marginTop: 16,
-            borderCollapse: "collapse",
-            fontSize: 14,
-          }}
-        >
-          <thead>
-            <tr style={{ backgroundColor: "#f0f0f0" }}>
-              <th style={{ border: "1px solid #ccc", padding: 8, width: "30%" }}>Medicine Name</th>
-              <th style={{ border: "1px solid #ccc", padding: 8, width: "12%" }}>Batch</th>
-              <th style={{ border: "1px solid #ccc", padding: 8, width: "8%" }}>Qty</th>
-              <th style={{ border: "1px solid #ccc", padding: 8, width: "12%" }}>Unit Price</th>
-              <th style={{ border: "1px solid #ccc", padding: 8, width: "14%" }}>Total Price</th>
-              <th style={{ border: "1px solid #ccc", padding: 8 }}>Location</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, idx) => {
-              const totalPrice = (item.qty * item.unitPrice).toFixed(2);
-              const medicineOptions = Object.keys(batchesByMedicine);
-              const batchOptions = item.medicineName
-                ? batchesByMedicine[item.medicineName] || []
-                : [];
-
-              return (
-                <tr key={idx}>
-                  <td style={{ border: "1px solid #ccc", padding: 4 }}>
-                    <input
-                      list={`sale-medicines-list-${idx}`}
-                      placeholder="Search medicine..."
-                      value={item.medicineName}
-                      onChange={(e) => updateItem(idx, "medicineName", e.target.value)}
-                      style={{ width: "100%", padding: 6, fontSize: 14 }}
-                    />
-                    <datalist id={`sale-medicines-list-${idx}`}>
-                      {medicineOptions.map((med) => (
-                        <option key={med} value={med} />
-                      ))}
-                    </datalist>
-                  </td>
-                  <td style={{ border: "1px solid #ccc", padding: 4 }}>
-                    <select
-                      value={item.batch || ""}
-                      onChange={(e) => updateItem(idx, "batch", e.target.value)}
-                      style={{ width: "100%", padding: 6, fontSize: 14 }}
-                      disabled={!item.medicineName}
-                    >
-                      <option value="">Select</option>
-                      {batchOptions.map((b) => (
-                        <option key={b} value={b}>
-                          {b}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td style={{ border: "1px solid #ccc", padding: 4 }}>
-                    <input
-                      type="number"
-                      min={0}
-                      value={item.qty}
-                      onChange={(e) => updateItem(idx, "qty", e.target.value)}
-                      style={{ width: "100%", padding: 6, fontSize: 14 }}
-                    />
-                  </td>
-                  <td style={{ border: "1px solid #ccc", padding: 4 }}>
-                    <input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={item.unitPrice}
-                      onChange={(e) => updateItem(idx, "unitPrice", e.target.value)}
-                      style={{ width: "100%", padding: 6, fontSize: 14 }}
-                    />
-                  </td>
-                  <td
-                    style={{
-                      border: "1px solid #ccc",
-                      padding: 4,
-                      textAlign: "right",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    ${totalPrice}
-                  </td>
-                  <td style={{ border: "1px solid #ccc", padding: 4 }}>
-                    <input
-                      type="text"
-                      placeholder="e.g. Rack A1"
-                      value={item.location}
-                      onChange={(e) => updateItem(idx, "location", e.target.value)}
-                      style={{ width: "100%", padding: 6, fontSize: 14 }}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        <button
-          onClick={addAnotherItem}
-          style={{
-            marginTop: 12,
-            backgroundColor: "transparent",
-            border: "none",
-            color: "#0066cc",
-            cursor: "pointer",
-            fontSize: 14,
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-          }}
-          type="button"
-        >
-          <span style={{ fontSize: 20, lineHeight: 0 }}>+</span> Add another item
-        </button>
-      </section>
-
-      <section
-        style={{
-          borderTop: "1px solid #ddd",
-          paddingTop: 12,
-          marginBottom: 24,
-          fontSize: 14,
-          color: "#555",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 12,
-        }}
-      >
-        <div>
-          <strong>Current Stock:</strong>{" "}
-          <span style={{ color: "#0066cc" }}>{currentStock} units</span>{" "}
-          <strong>Expiry:</strong> {expiry} <strong>MRP:</strong> ${unitMrp.toFixed(2)}
-        </div>
-
-        <div
-          style={{
-            textAlign: "right",
-            minWidth: 150,
-            fontWeight: "bold",
-            fontSize: 16,
-          }}
-        >
-          <div>
-            Subtotal <span style={{ float: "right" }}>${subtotal.toFixed(2)}</span>
+    <div className="bg-gray-50 min-h-screen p-6 font-sans text-gray-900">
+      <header className="mb-6 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="bg-green-600 text-white px-3 py-1 rounded font-semibold text-sm">
+            Stitch - Sales
           </div>
-          <div>
-            Tax (5%) <span style={{ float: "right" }}>${tax.toFixed(2)}</span>
-          </div>
-          <div style={{ marginTop: 8 }}>
-            Grand Total{" "}
-            <span style={{ float: "right", fontWeight: "bold", fontSize: 18 }}>
-              ${grandTotal.toFixed(2)}
-            </span>
-          </div>
+          <nav className="space-x-4 text-gray-700 font-medium">
+            <a href="#" className="hover:text-green-600">Dashboard</a>
+            <a href="#" className="hover:text-green-600">Inventory</a>
+            <a href="#" className="underline font-bold text-green-700">Sales</a>
+            <a href="#" className="hover:text-green-600">Reports</a>
+          </nav>
         </div>
-      </section>
+        <div className="flex items-center space-x-4">
+          <button className="bg-green-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-green-700 transition">
+            Log Out
+          </button>
+          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-semibold">U</div>
+        </div>
+      </header>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-        <button
-          onClick={() => {
-            setBillNumber("");
-            setCustomer("");
-            setItems(initialItems);
-          }}
-          style={{
-            padding: "8px 16px",
-            borderRadius: 4,
-            border: "1px solid #ccc",
-            backgroundColor: "#fff",
-            cursor: "pointer",
-          }}
-          type="button"
-          disabled={saving}
-        >
-          Cancel
-        </button>
-        <button
-          onClick={saveSale}
-          style={{
-            padding: "8px 16px",
-            borderRadius: 4,
-            border: "none",
-            backgroundColor: "#2563eb",
-            color: "#fff",
-            cursor: "pointer",
-          }}
-          type="button"
-          disabled={saving}
-        >
-          {saving ? "Saving..." : "Save Sale"}
-        </button>
-      </div>
+      <main className="bg-white rounded-lg shadow p-6 max-w-7xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4">Enter Sale</h1>
+        <p className="mb-6 text-gray-700">Create a sales bill by adding medicine items below.</p>
+
+        <section className="mb-6 bg-gray-100 p-4 rounded">
+          <h2 className="font-semibold mb-3">Bill Details</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1" htmlFor="date">Date</label>
+              <input type="date" id="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full rounded border border-gray-300 px-3 py-2 bg-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1" htmlFor="billNumber">Bill Number</label>
+              <input type="text" id="billNumber" placeholder="e.g., BIL-2025-001" value={billNumber} onChange={(e) => setBillNumber(e.target.value)} className="w-full rounded border border-gray-300 px-3 py-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1" htmlFor="customer">Customer</label>
+              <input type="text" id="customer" placeholder="Customer name (optional)" value={customer} onChange={(e) => setCustomer(e.target.value)} className="w-full rounded border border-gray-300 px-3 py-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1" htmlFor="paymentMethod">Payment</label>
+              <select id="paymentMethod" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full rounded border border-gray-300 px-3 py-2">
+                <option value="">Select payment</option>
+                {paymentMethods.map((p) => (<option key={p} value={p}>{p}</option>))}
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <table className="w-full border-collapse border border-gray-300">
+            <thead className="bg-gray-200">
+              <tr>
+                <th className="border border-gray-300 px-3 py-2 text-left text-sm font-semibold">Medicine Name</th>
+                <th className="border border-gray-300 px-3 py-2 text-left text-sm font-semibold">Batch</th>
+                <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">Qty</th>
+                <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">Unit Price</th>
+                <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">Discount %</th>
+                <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">Line Total</th>
+                <th className="border border-gray-300 px-3 py-2 text-left text-sm font-semibold">Location</th>
+                <th className="border border-gray-300 px-3 py-2 text-center text-sm font-semibold">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => {
+                const total = rowTotal(row).toFixed(2);
+                return (
+                  <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <input type="text" placeholder="Search medicine..." value={row.medicineName} onChange={(e) => handleRowChange(i, "medicineName", e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <input type="text" value={row.batch} onChange={(e) => handleRowChange(i, "batch", e.target.value)} placeholder="Batch" className="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">
+                      <input type="number" min="0" value={row.qty} onChange={(e) => handleRowChange(i, "qty", e.target.value)} className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-right" />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">
+                      <input type="number" min="0" step="0.01" value={row.unitPrice} onChange={(e) => handleRowChange(i, "unitPrice", e.target.value)} className="w-24 border border-gray-300 rounded px-2 py-1 text-sm text-right" />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">
+                      <input type="number" min="0" max="100" step="0.01" value={row.discountPercent} onChange={(e) => handleRowChange(i, "discountPercent", e.target.value)} className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-right" />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-right font-semibold text-gray-700">₹{total}</td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <input type="text" placeholder="e.g. Rack A1" value={row.location} onChange={(e) => handleRowChange(i, "location", e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-center">
+                      <button type="button" onClick={() => removeRow(i)} className="text-sm text-red-600 hover:underline">Remove</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <div className="mt-3 flex items-center justify-between">
+            <button type="button" onClick={addAnotherItem} className="text-green-600 font-semibold text-sm hover:underline">+ Add another item</button>
+          </div>
+        </section>
+
+        <section className="mt-6 bg-gray-100 p-4 rounded flex justify-between items-center text-sm font-medium text-gray-700">
+          <div />
+          <div className="text-right">
+            <div>Subtotal <span className="font-semibold">₹{subtotal.toFixed(2)}</span></div>
+            <div>Tax (5%) <span className="font-semibold">₹{tax.toFixed(2)}</span></div>
+            <div className="text-lg font-bold text-green-600">Grand Total ₹{grandTotal.toFixed(2)}</div>
+          </div>
+        </section>
+
+        <section className="mt-6 flex justify-end space-x-4">
+          <button className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100" onClick={() => alert("Sale cancelled")}>Cancel</button>
+          <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700" onClick={() => alert("Sale saved")}>Save Sale</button>
+        </section>
+      </main>
     </div>
   );
 }

@@ -13,13 +13,13 @@ import {
 
 const menuItems = [
   { label: "Dashboard", icon: <MdDashboard size={20} />, key: "dashboard",path: "/purchase"  },
-  { label: "Medicines", icon: <MdLocalPharmacy size={20} />, key: "medicines" ,path: "/purchase"},
-  { label: "Suppliers", icon: <MdLocalShipping size={20} />, key: "suppliers" ,path: "/purchase"},
-  { label: "Customers", icon: <MdPeople size={20} />, key: "customers" ,path: "/purchase"},
-  { label: "Purchases", icon: <MdShoppingCart size={20} />, key: "purchase" ,path: "/purchase"},
+  { label: "Medicines", icon: <MdLocalPharmacy size={20} />, key: "medicines" ,path: "/medicines"},
+  { label: "Suppliers", icon: <MdLocalShipping size={20} />, key: "suppliers" ,path: "/suppliers"},
+  { label: "Customers", icon: <MdPeople size={20} />, key: "customers" ,path: "/customers"},
+  { label: "Purchases", icon: <MdShoppingCart size={20} />, key: "purchase" ,path: "/purchases"},
   { label: "Add Purchase", icon: <MdShoppingCart size={20} />, key: "add_purchase" ,path: "/purchase"},
-  { label: "Sales", icon: <MdAttachMoney size={20} />, key: "sales",path: "/purchase" },
-    { label: "Add Sale", icon: <MdAttachMoney size={20} />, key: "add_sale",path: "/sale" },
+  { label: "Sales", icon: <MdAttachMoney size={20} />, key: "sales",path: "/sales" },
+  { label: "Add Sale", icon: <MdAttachMoney size={20} />, key: "add_sale",path: "/sale" },
   { label: "Reports", icon: <MdBarChart size={20} />, key: "reports",path: "/purchase" },
 ];
 
