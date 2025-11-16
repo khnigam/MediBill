@@ -1,14 +1,43 @@
 import React, { useState, useMemo } from 'react';
+import { useEffect } from "react";
 
 const initialCustomers = [
   { id: 1, name: 'Amit Kumar', phone: '98765 43210', email: 'amit.k@example.com', address: 'MG Road, New Delhi', gstin: '', loyaltyPoints: 120 },
   { id: 2, name: 'Sanya Verma', phone: '91234 56789', email: 'sanya.v@example.com', address: 'Koramangala, Bangalore', gstin: '', loyaltyPoints: 45 },
-  // add more customers as needed
+
 ];
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 12;
 
 const CustomerList = () => {
+useEffect(() => {
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/customers");
+      const data = await response.json();
+      // map backend fields to UI fields
+      const uiList = (Array.isArray(data) ? data : []).map(c => ({
+        id: c.id,
+        name: c.name,
+        phone: c.phoneNumber || '',     // <-- backend -> frontend mapping
+        email: c.email || '',
+        address: c.address || '',
+        gstin: c.gstNumber || '',       // backend gstNumber -> frontend gstin
+        loyaltyPoints: c.loyaltyPoints || 0
+      }));
+      setCustomers(uiList);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      setCustomers([]);
+    } finally {
+      setLoading && setLoading(false);
+    }
+  };
+
+  fetchCustomers();
+}, []);
+
+const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState(initialCustomers);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '', gstin: '', loyaltyPoints: 0 });
@@ -25,10 +54,19 @@ const CustomerList = () => {
   const totalPages = Math.ceil(filteredCustomers.length / PAGE_SIZE);
   const pagedCustomers = filteredCustomers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const openEditModal = (customer) => {
-    setEditingCustomer(customer);
-    setFormData({ ...customer });
-  };
+    const openEditModal = (customer) => {
+      setEditingCustomer(customer);
+      setFormData({
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email,
+        address: customer.address,
+        gstin: customer.gstin,
+        loyaltyPoints: customer.loyaltyPoints
+      });
+    };
+
 
   const closeEditModal = () => {
     setEditingCustomer(null);
@@ -40,10 +78,52 @@ const CustomerList = () => {
     setFormData(prev => ({ ...prev, [name]: name === 'loyaltyPoints' ? Number(value) || 0 : value }));
   };
 
-  const saveCustomer = () => {
-    setCustomers(prev => prev.map(c => (c.id === editingCustomer.id ? { ...c, ...formData } : c)));
+const saveCustomer = async () => {
+  try {
+    const payload = {
+      id: formData.id ?? null,
+      name: formData.name,
+      phoneNumber: formData.phone,    // <-- frontend -> backend mapping
+      email: formData.email,
+      address: formData.address,
+      gstNumber: formData.gstin,      // map gstin -> gstNumber
+      licenseNumber: ""               // not in UI, keep empty
+    };
+
+    const response = await fetch("http://localhost:8080/api/customers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const saved = await response.json();
+
+    // Map saved backend object back to UI shape
+    const mapped = {
+      id: saved.id,
+      name: saved.name,
+      phone: saved.phoneNumber || '',
+      email: saved.email || '',
+      address: saved.address || '',
+      gstin: saved.gstNumber || '',
+      loyaltyPoints: saved.loyaltyPoints ?? 0
+    };
+
+    if (formData.id) {
+      // UPDATE in UI
+      setCustomers(prev => prev.map(c => (c.id === mapped.id ? mapped : c)));
+    } else {
+      // CREATE in UI
+      setCustomers(prev => [...prev, mapped]);
+    }
+
     closeEditModal();
-  };
+  } catch (error) {
+    console.error("Error saving customer:", error);
+  }
+};
+
+
 
   return (
     <div className="mt-24 ml-16"
@@ -82,7 +162,10 @@ const CustomerList = () => {
             fontSize: 14,
             boxShadow: '0 2px 8px rgba(16, 185, 129, 0.28)',
           }}
-          onClick={() => alert('Add New Customer Modal (not implemented)')}
+          onClick={() => {
+            setEditingCustomer({id: null,name: "",phone: "",email: "",address: "",gstin: "",loyaltyPoints: 0});
+            setFormData({id: null,name: "",phone: "",email: "",address: "",gstin: "",loyaltyPoints: 0});
+          }}
         >
           + Add New Customer
         </button>

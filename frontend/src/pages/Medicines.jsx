@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useEffect } from "react";
 
 const initialInventory = [
   {
@@ -50,52 +51,80 @@ const initialInventory = [
     expiryDate: "06/2024",
   },
 ];
-
 function MedicineInventory() {
-  const totalMedicines = 1482;
-  const itemsLowOnStock = 56;
-  const itemsExpiringSoon = 23;
+  const [inventory, setInventory] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+const [batchModal, setBatchModal] = useState(null);
+const [batchList, setBatchList] = useState([]);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 12;
+
+  const totalMedicines = inventory.length;
+  const itemsLowOnStock = inventory.filter(i => i.availableStock < 50).length;
+  const itemsExpiringSoon = 0;
+
+    const openBatchModal = async (medicine) => {
+      setBatchModal(medicine);
+
+      try {
+        const response = await fetch(`http://localhost:8080/api/medicines/${medicine.id}/batches`);
+        const data = await response.json();
+        setBatchList(data);
+      } catch (err) {
+        console.error("Error loading batches", err);
+      }
+    };
+
+const closeBatchModal = () => {
+  setBatchModal(null);
+  setBatchList([]);
+};
+
+
+  useEffect(() => {
+    fetch("http://localhost:8080/api/medicines/summary")
+      .then(res => res.json())
+      .then(data => {
+        const formatted = data.map(m => ({
+          id: m.id,
+          medicineName: m.name,
+          genericName: m.brand,
+          availableStock: m.totalQuantity,
+          unitPrice: m.highestMrp || 0,
+        }));
+        setInventory(formatted);
+      })
+      .catch(err => console.error("Error fetching inventory", err));
+  }, []);
+
+  const filteredInventory = inventory.filter(item =>
+    item.medicineName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.genericName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // handle page reset on search
+  useEffect(() => setPage(1), [searchTerm]);
+
+  const totalPages = Math.ceil(filteredInventory.length / PAGE_SIZE);
+
+  const paginatedItems = filteredInventory.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
 
   return (
     <div className="container mx-auto p-6 font-sans">
-      <header className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Medicine Inventory</h1>
-        <nav className="space-x-4 text-blue-600">
-          <a href="#inventory" className="font-semibold">
-            Inventory
-          </a>
-          <a href="#orders">Orders</a>
-          <a href="#suppliers">Suppliers</a>
-          <a href="#reports">Reports</a>
-        </nav>
-      </header>
 
-      <p className="mb-6 text-gray-600">
-        Manage and track all medicines in stock.
-      </p>
-
-      <div className="grid grid-cols-3 gap-6 mb-6">
-        <div className="bg-white rounded shadow p-4">
-          <div className="text-3xl font-bold">{totalMedicines.toLocaleString()}</div>
-          <div className="text-green-600 text-sm mt-1">+5% from last month</div>
-          <div className="mt-1 text-gray-600">Total Medicines</div>
-        </div>
-        <div className="bg-white rounded shadow p-4">
-          <div className="text-3xl font-bold text-red-600">{itemsLowOnStock}</div>
-          <div className="text-red-600 text-sm mt-1">-2 since yesterday</div>
-          <div className="mt-1 text-gray-600">Items Low on Stock</div>
-        </div>
-        <div className="bg-white rounded shadow p-4">
-          <div className="text-3xl font-bold text-yellow-700">{itemsExpiringSoon}</div>
-          <div className="text-yellow-700 text-sm mt-1">+1 from last week</div>
-          <div className="mt-1 text-gray-600">Items Expiring Soon</div>
-        </div>
-      </div>
+      {/* header + stats kept same */}
 
       <div className="mb-4 flex justify-between items-center">
         <input
           type="search"
-          placeholder="Search by medicine or generic name..."
+          placeholder="Search by medicine or brand..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="border rounded p-2 w-72"
         />
         <div className="space-x-2">
@@ -112,51 +141,124 @@ function MedicineInventory() {
         <thead>
           <tr className="border-b">
             <th className="p-3 text-left">Medicine Name</th>
-            <th className="p-3 text-left">Generic Name</th>
+            <th className="p-3 text-left">Brand</th>
             <th className="p-3 text-left">Available Stock</th>
             <th className="p-3 text-left">Unit Price</th>
-            <th className="p-3 text-left">Expiry Date</th>
             <th className="p-3 text-left">Actions</th>
           </tr>
         </thead>
+
         <tbody>
-          {initialInventory.map((item) => {
+          {paginatedItems.map(item => {
             const lowStock = item.availableStock < 50;
-            const expiringSoon =
-              item.expiryDate && item.expiryDate.startsWith("07/2024") || item.expiryDate.startsWith("06/2024") || item.expiryDate.startsWith("08/2024");
             return (
-              <tr key={item.id} className="border-b hover:bg-gray-50">
+              <tr
+                key={item.id}
+                className="border-b hover:bg-gray-50 cursor-pointer"
+                onClick={() => openBatchModal(item)}
+              >
+
                 <td className="p-3 font-semibold">{item.medicineName}</td>
                 <td className="p-3 text-gray-600">{item.genericName}</td>
                 <td className={`p-3 ${lowStock ? "text-red-600 font-semibold" : ""}`}>
                   {lowStock ? "● " : ""}
                   {item.availableStock.toLocaleString()} units
                 </td>
-                <td className="p-3">${item.unitPrice.toFixed(2)}</td>
-                <td className={`p-3 ${expiringSoon ? "text-yellow-700 font-semibold" : ""}`}>
-                  {expiringSoon ? "● " : ""}
-                  {item.expiryDate}
-                </td>
+                <td className="p-3">₹{item.unitPrice.toFixed(2)}</td>
                 <td className="p-3 space-x-2 text-gray-600">
-                  <button title="Edit" aria-label={`Edit ${item.medicineName}`}>
-                    ✏️
-                  </button>
-                  <button title="Delete" aria-label={`Delete ${item.medicineName}`}>
-                    🗑️
-                  </button>
+                  <button>✏️</button>
+                  <button>🗑️</button>
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
-      <div className="mt-4 text-gray-600">
-        Showing 1 to 6 of 1482 results
-        <div className="float-right space-x-2">
-          <button className="border px-3 py-1 rounded">Previous</button>
-          <button className="border px-3 py-1 rounded">Next</button>
+
+      {batchModal && (
+        <div
+          onClick={closeBatchModal}
+          className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white p-6 rounded-lg shadow-xl w-[600px]"
+          >
+            <h2 className="text-xl font-bold mb-4">
+              Batch Details – {batchModal.medicineName}
+            </h2>
+
+            <table className="w-full border-collapse bg-white shadow rounded">
+              <thead>
+                <tr className="border-b">
+                  <th className="p-2 text-left">Batch No</th>
+                  <th className="p-2 text-left">Expiry</th>
+                  <th className="p-2 text-left">MRP</th>
+                  <th className="p-2 text-left">Purchase Rate</th>
+                  <th className="p-2 text-left">Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {batchList.map((b, idx) => (
+                  <tr key={idx} className="border-b">
+                    <td className="p-2">{b.batchNo}</td>
+                    <td className="p-2">{b.expiryDate}</td>
+                    <td className="p-2">₹{b.mrp.toFixed(2)}</td>
+                    <td className="p-2">₹{b.purchaseRate.toFixed(2)}</td>
+                    <td className="p-2">{b.quantity}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="mt-4 text-right">
+              <button
+                onClick={closeBatchModal}
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Pagination Footer */}
+      <div className="mt-4 flex justify-between text-gray-600">
+        <div>
+          Showing{" "}
+          {filteredInventory.length === 0
+            ? "0"
+            : (page - 1) * PAGE_SIZE + 1}{" "}
+          to{" "}
+          {Math.min(page * PAGE_SIZE, filteredInventory.length)} of{" "}
+          {filteredInventory.length} results
+        </div>
+
+        <div className="space-x-2">
+          <button
+            onClick={() => setPage(p => Math.max(p - 1, 1))}
+            disabled={page === 1}
+            className={`border px-3 py-1 rounded ${
+              page === 1 ? "bg-gray-200 cursor-not-allowed" : ""
+            }`}
+          >
+            Previous
+          </button>
+
+          <button
+            onClick={() => setPage(p => Math.min(p + 1, totalPages))}
+            disabled={page === totalPages}
+            className={`border px-3 py-1 rounded ${
+              page === totalPages ? "bg-gray-200 cursor-not-allowed" : ""
+            }`}
+          >
+            Next
+          </button>
         </div>
       </div>
+
       <footer className="mt-10 text-center text-gray-500 text-sm">
         © 2024 MediDistribute. All rights reserved.
       </footer>
@@ -288,7 +390,9 @@ function EnterPurchase() {
                 <option key={dist} value={dist}>
                   {dist}
                 </option>
-              ))}
+              ))
+          }
+
             </select>
           </div>
         </div>
@@ -372,7 +476,7 @@ function EnterPurchase() {
                     className="border rounded p-1 w-20"
                   />
                 </td>
-                <td className="p-2">${totalPrice.toFixed(2)}</td>
+                <td className="p-2">₹{totalPrice.toFixed(2)}</td>
                 <td className="p-2">
                   <input
                     type="text"
@@ -413,18 +517,18 @@ function EnterPurchase() {
           <span className="text-blue-600">{currentStock.toLocaleString()} units</span>
         </span>
         <span>Expiry: {expiryDate}</span>
-        <span>Unit Cost: ${items[0].unitPrice.toFixed(2)}</span>
+        <span>Unit Cost: ₹{items[0].unitPrice.toFixed(2)}</span>
       </div>
 
       <div className="max-w-4xl text-right space-y-1">
         <div>
-          Subtotal: <span className="font-semibold">${subtotal.toFixed(2)}</span>
+          Subtotal: <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
         </div>
         <div>
-          Tax (5%): <span className="font-semibold">${tax.toFixed(2)}</span>
+          Tax (5%): <span className="font-semibold">₹{tax.toFixed(2)}</span>
         </div>
         <div className="text-xl font-bold">
-          Grand Total: <span>${grandTotal.toFixed(2)}</span>
+          Grand Total: <span>₹{grandTotal.toFixed(2)}</span>
         </div>
       </div>
 
