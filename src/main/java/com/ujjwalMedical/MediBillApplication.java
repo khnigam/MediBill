@@ -11,7 +11,6 @@ import org.springframework.context.annotation.ComponentScan;
 @EntityScan("com.ujjwalMedical.entity")
 @ComponentScan("com.ujjwalMedical")
 public class MediBillApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(MediBillApplication.class, args);
 	}

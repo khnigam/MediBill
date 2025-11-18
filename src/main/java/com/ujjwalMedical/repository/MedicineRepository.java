@@ -4,6 +4,7 @@ import com.ujjwalMedical.dto.MedicineSummaryDTO;
 import com.ujjwalMedical.entity.Medicine;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -24,4 +25,7 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
         GROUP BY m.id, m.name, m.brand
     """)
     List<MedicineSummaryDTO> getMedicineSummary();
+
+    @Query("SELECT m FROM Medicine m WHERE LOWER(m.name) LIKE %:query%")
+    List<Medicine> searchByName(@Param("query") String query);
 }

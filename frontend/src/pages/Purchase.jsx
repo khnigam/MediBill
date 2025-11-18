@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-
+import { useEffect } from "react";
 const distributors = [
   "Global Pharma",
   "HealthCare Supply",
@@ -26,6 +26,42 @@ export default function EnterPurchasePage() {
   const [currentStock, setCurrentStock] = useState(0); // no prepopulate
   const [expiry, setExpiry] = useState("");
   const [unitCost, setUnitCost] = useState(0);
+
+const searchMedicine = (text) => {
+  if (!text || text.length < 2) {
+    setSearchResults([]);
+    return;
+  }
+
+  const q = text.toLowerCase();
+
+  const filtered = medicineList.filter((m) =>
+    m.medicineName?.toLowerCase().includes(q)
+  );
+
+  setSearchResults(filtered);
+};
+
+
+
+    const [medicineList, setMedicineList] = useState([]);
+    const [searchResults, setSearchResults] = useState([]);
+
+    useEffect(() => {
+      const fetchAll = async () => {
+        try {
+          const res = await fetch("http://localhost:8080/api/medicines/forSearch?query=");
+          const data = await res.json();
+          console.log("Loaded all medicines:", data);
+          setMedicineList(data);
+        } catch (err) {
+          console.error("Fetch error:", err);
+        }
+      };
+
+      fetchAll();
+    }, []);
+
 
   const handleRowChange = (index, field, value) => {
     const newRows = [...rows];
@@ -163,30 +199,63 @@ export default function EnterPurchasePage() {
                 const totalPrice = (row.qty * row.unitPrice).toFixed(2);
                 return (
                   <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+<td className="border border-gray-300 px-3 py-2 relative">
+  <input
+    type="text"
+    placeholder="Search medicine..."
+    value={row.medicineName}
+    onChange={(e) => {
+      const text = e.target.value;
+      handleRowChange(i, "medicineName", text);
+      searchMedicine(text);
+    }}
+    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+  />
+
+  {searchResults.length > 0 && row.medicineName.length >= 2 && (
+    <div className="absolute z-50 bg-white border border-gray-300 rounded w-full max-h-40 overflow-y-auto shadow">
+      {searchResults.map((m) => (
+        <div
+          key={m.medicineId}
+          className="px-2 py-1 hover:bg-gray-200 cursor-pointer"
+          onClick={() => {
+            const name = m.medicineName;
+
+            setRows(prev => {
+              const copy = [...prev];
+              copy[i].medicineName = name;
+              copy[i].batchOptions = m.batches;
+              return copy;
+            });
+
+            setSearchResults([]);
+          }}
+
+
+        >
+          {m.medicineName}
+        </div>
+      ))}
+    </div>
+  )}
+</td>
+
+
                     <td className="border border-gray-300 px-3 py-2">
-                      <input
-                        type="text"
-                        placeholder="Search medicine..."
-                        value={row.medicineName}
-                        onChange={(e) =>
-                          handleRowChange(i, "medicineName", e.target.value)
-                        }
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-                      />
-                    </td>
-                    <td className="border border-gray-300 px-3 py-2">
-                      <select
-                        value={row.batch}
-                        onChange={(e) =>
-                          handleRowChange(i, "batch", e.target.value)
-                        }
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-                      >
-                        <option value="">Select</option>
-                        <option value="P500-A01">P500-A01</option>
-                        <option value="P500-A02">P500-A02</option>
-                        <option value="P500-A03">P500-A03</option>
-                      </select>
+                       <select
+                         value={row.batch}
+                         onChange={(e) => handleRowChange(i, "batch", e.target.value)}
+                         className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                       >
+                         <option value="">Select</option>
+
+                         {(row.batchOptions || []).map((batch) => (
+                           <option key={batch.batchId} value={batch.batchNo}>
+                             {batch.batchNo}
+                           </option>
+                         ))}
+                       </select>
+
                     </td>
                     <td className="border border-gray-300 px-3 py-2 text-right">
                       <input
