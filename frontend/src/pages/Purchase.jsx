@@ -32,6 +32,7 @@ export default function EnterPurchasePage() {
     unitPrice: 0,          // before tax
     actualPrice: null,     // optional actual price (if rateType === "actual")
     expiry: "",
+    mrp: "",
     tax: 5,
     batchOptions: [],      // batches from selected medicine
     apiTax: false,         // if true, tax is readonly (from API)
@@ -39,10 +40,10 @@ export default function EnterPurchasePage() {
   };
 
   // create 8 empty rows by default
-  const initialRows = Array.from({ length: 8 }, () => ({ ...emptyRowTemplate }));
+  const initialRows = Array.from({ length: 2 }, () => ({ ...emptyRowTemplate }));
 
   // keyboard navigation order
-  const colOrder = ["medicineName", "batch", "expiry", "tax", "qty", "unitPrice"];
+  const colOrder = ["medicineName", "batch", "expiry", "mrp", "tax", "qty", "unitPrice"];
 
   // component state
   const [date, setDate] = useState("");
@@ -304,6 +305,7 @@ export default function EnterPurchasePage() {
           handleRowChange(rowIndex, "batch", b.batchNo);
           handleRowChange(rowIndex, "batchMeta", b);
           if (b.expiry) handleRowChange(rowIndex, "expiry", b.expiry);
+          if (b.mrp) handleRowChange(rowIndex, "mrp", b.mrp);
           setBatchResults(prev => ({ ...prev, [rowIndex]: [] }));
           setBatchActive(prev => ({ ...prev, [rowIndex]: -1 }));
         }
@@ -399,6 +401,7 @@ export default function EnterPurchasePage() {
           medicine_id: row.medicineId ?? null,
           medicine_name: row.medicineName ?? "",
           batch: row.batch ?? "",
+          mrp: row.mrp || "",
           qty: Number(row.qty) || 0,
           unit_price: Number(row.unitPrice) || 0,         // before tax
           net_unit_price: Number(vals.netUnitInclTax) || 0, // after tax
@@ -414,7 +417,7 @@ export default function EnterPurchasePage() {
       distributor_id: supplierId || null,
       purchase_type: purchaseType,
       payment_type: paymentType,
-      rate_type: rateType === "actual" ? "actual" : "none",
+      rate_type: rateType === "actual" ? "dummy" : "actual",
       tax_type: taxType,
       medicines: medicinesPayload
     };
@@ -448,12 +451,13 @@ export default function EnterPurchasePage() {
     }
   };
 
+//  <h1 className="text-2xl font-bold mb-4">Enter Purchase</h1>
+//         <p className="mb-6 text-gray-700">Fill in the invoice details and add medicine items to the purchase list.</p>
   return (
     <div className="bg-gray-50 min-h-screen p-6 font-sans text-gray-900">
       <div className="mb-6" style={{ height: "40px" }} />
       <main className="bg-white rounded-lg shadow p-6 max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Enter Purchase</h1>
-        <p className="mb-6 text-gray-700">Fill in the invoice details and add medicine items to the purchase list.</p>
+
 
         {/* Invoice + Options */}
         <section className="mb-6 bg-gray-100 p-4 rounded">
@@ -543,6 +547,7 @@ export default function EnterPurchasePage() {
                 <th className="border border-gray-300 px-3 py-2 text-left text-sm font-semibold">Medicine Name</th>
                 <th className="border border-gray-300 px-3 py-2 text-left text-sm font-semibold">Batch</th>
                 <th className="border border-gray-300 px-3 py-2 text-left text-sm font-semibold">Expiry</th>
+                <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">MRP</th>
                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">Tax (%)</th>
                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">Qty</th>
                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">Unit Price</th>
@@ -602,11 +607,11 @@ export default function EnterPurchasePage() {
                       )}
                     </td>
 
-                    <td className="border border-gray-300 px-3 py-2 relative">
+                    <td className="w-28 border border-gray-300 px-3 py-2 relative">
                       <input
                         id={`cell-${i}-batch`}
                         type="text"
-                        placeholder="Type or search batch..."
+                        placeholder="search.."
                         value={row.batch}
                         onChange={(e) => {
                           const text = e.target.value;
@@ -620,7 +625,7 @@ export default function EnterPurchasePage() {
                           ensureLastRowAlwaysEmpty(i);
                         }}
                         onKeyDown={(e) => handleKeyNav(e, i, "batch")}
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                        className="w-full box-border border border-gray-300 rounded px-2 py-1 text-sm"
                       />
 
                       {batchResults[i]?.length > 0 && (
@@ -641,7 +646,7 @@ export default function EnterPurchasePage() {
                       )}
                     </td>
 
-                    <td className="border border-gray-300 px-3 py-2 text-left">
+                    <td className="w-28 border border-gray-300 p-1 text-left">
                       <input
                         id={`cell-${i}-expiry`}
                         type="text"
@@ -653,11 +658,27 @@ export default function EnterPurchasePage() {
                           ensureLastRowAlwaysEmpty(i);
                         }}
                         onKeyDown={(e) => handleKeyNav(e, i, "expiry")}
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                        className="w-full box-border border border-gray-300 rounded px-2 py-1 text-sm"
+                      />
+                    </td>
+                    <td className="w-28 border border-gray-300 px-3 py-2 text-right">
+                      <input
+                        id={`cell-${i}-mrp`}
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="MRP"
+                        value={row.mrp}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/,/g, ".");
+                          handleRowChange(i, "mrp", v);
+                          ensureLastRowAlwaysEmpty(i);
+                        }}
+                        onKeyDown={(e) => handleKeyNav(e, i, "mrp")}
+                        className="w-full box-border border border-gray-300 rounded px-2 py-1 text-sm text-right"
                       />
                     </td>
 
-                    <td className="border border-gray-300 px-3 py-2 text-right">
+                    <td className="w-20 border border-gray-300 px-3 py-2 text-right">
                       <input
                         id={`cell-${i}-tax`}
                         type="text"
@@ -670,11 +691,11 @@ export default function EnterPurchasePage() {
                           ensureLastRowAlwaysEmpty(i);
                         }}
                         onKeyDown={(e) => handleKeyNav(e, i, "tax")}
-                        className={`w-16 border border-gray-300 rounded px-2 py-1 text-sm text-right ${row.apiTax ? "bg-gray-100" : ""}`}
+                        className={`w-full box-border border border-gray-300 rounded px-2 py-1 text-sm text-right ${row.apiTax ? "bg-gray-100" : ""}`}
                       />
                     </td>
 
-                    <td className="border border-gray-300 px-3 py-2 text-right">
+                    <td className="w-24 border border-gray-300 px-3 py-2 text-right">
                       <input
                         id={`cell-${i}-qty`}
                         type="text"
@@ -687,11 +708,11 @@ export default function EnterPurchasePage() {
                           ensureLastRowAlwaysEmpty(i);
                         }}
                         onKeyDown={(e) => handleKeyNav(e, i, "qty")}
-                        className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                        className="w-full box-border border border-gray-300 rounded px-2 py-1 text-sm text-right"
                       />
                     </td>
 
-                    <td className="border border-gray-300 px-3 py-2 text-right">
+                    <td className="w-24 box-border border border-gray-300 px-1 py-0 text-right">
                       <input
                         id={`cell-${i}-unitPrice`}
                         type="text"
@@ -704,12 +725,12 @@ export default function EnterPurchasePage() {
                           ensureLastRowAlwaysEmpty(i);
                         }}
                         onKeyDown={(e) => handleKeyNav(e, i, "unitPrice")}
-                        className="w-28 border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                        className="w-full box-border border border-gray-300 rounded px-2 py-1 text-sm text-right"
                       />
                     </td>
 
                     {rateType === "actual" && (
-                      <td className="border border-gray-300 px-3 py-2 text-right">
+                      <td className="w-28 border border-gray-300 px-3 py-2 text-right">
                         <input
                           id={`cell-${i}-actualPrice`}
                           type="text"
@@ -721,18 +742,18 @@ export default function EnterPurchasePage() {
                             handleRowChange(i, "actualPrice", v === "" ? null : Number(v));
                             ensureLastRowAlwaysEmpty(i);
                           }}
-                          className="w-28 border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                          className="w-full box-border border border-gray-300 rounded px-2 py-1 text-sm text-right"
                         />
                       </td>
                     )}
 
                     {taxType === "exclusive" && (
-                      <td className="border border-gray-300 px-3 py-2 text-right font-medium">
+                      <td className="w-28 border border-gray-300 px-3 py-2 text-right font-medium">
                         {Number(vals.netUnitInclTax).toFixed(2)}
                       </td>
                     )}
 
-                    <td className="border border-gray-300 px-3 py-2 text-right font-semibold text-gray-700">
+                    <td className="w-28 border border-gray-300 px-3 py-2 text-right font-semibold text-gray-700">
                       {totalPrice}
                     </td>
                   </tr>

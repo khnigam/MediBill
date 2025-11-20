@@ -52,6 +52,7 @@ public class PurchaseService {
         purchase.setPaymentType(req.getPayment_type());
         purchase.setRateType(req.getRate_type());
         purchase.setTaxType(req.getTax_type());
+        Boolean onBill = req.getPurchase_type().equals("stock_update");
 
         List<PurchaseItem> items = new ArrayList<>();
 
@@ -61,6 +62,12 @@ public class PurchaseService {
         for (PurchaseItemRequest itemReq : req.getMedicines()) {
 
             Medicine medicine;
+            Double netRate;
+            if (req.getRate_type().equals("dummy") && itemReq.getActual_price() != null &&  itemReq.getActual_price() > 0) {
+                netRate = itemReq.getActual_price();
+            }else {
+                netRate = itemReq.getNet_unit_price();
+            }
 
             if (itemReq.getMedicine_id() != null) {
                 medicine = medicineRepo.findById(itemReq.getMedicine_id())
@@ -71,13 +78,12 @@ public class PurchaseService {
                 medicine.setName(itemReq.getMedicine_name());
                 medicine.setSku(null);
                 medicine.setBrand(null);
-
                 medicine = medicineRepo.save(medicine);
             }
 
 
             Batch batch = batchRepo
-                    .findByMedicineIdAndBatchNo(medicine.getId(), itemReq.getBatch())
+                    .findByMedicineIdAndBatchNo(medicine.getId(), itemReq.getBatch() ,onBill)
                     .orElse(null);
 
             if (batch == null) {
@@ -85,8 +91,7 @@ public class PurchaseService {
                 batch.setBatchNo(itemReq.getBatch());
                 batch.setMedicine(medicine);
                 batch.setExpiryDate(parseExpiry(itemReq.getExpiry()));
-
-                batch.setPurchaseRate(itemReq.getNet_unit_price());
+                batch.setOnBill(onBill);
                 batchRepo.save(batch);
             }
 
@@ -100,16 +105,21 @@ public class PurchaseService {
             item.setNetUnitPrice(itemReq.getNet_unit_price());
             item.setTaxPercent(itemReq.getTax());
             item.setExpiry(parseExpiry(itemReq.getExpiry()));
-
-            double gst = (itemReq.getNet_unit_price() - itemReq.getUnit_price()) * itemReq.getQty();
-            double amount = itemReq.getNet_unit_price() * itemReq.getQty();
+            Integer updatedQuantity = (batch.getQuantity() != null ? batch.getQuantity() : 0) + itemReq.getQty() ;
+            batch.setQuantity(updatedQuantity);
+            batch.setExpiryDate(parseExpiry(itemReq.getExpiry()));
+            batch.setPurchaseRate(netRate);
+            batch.setMrp(itemReq.getMrp());
+            if (batch.getGst() == null){
+                batch.setGst(itemReq.getTax());
+            }
+            double gst = ((netRate/(1+(batch.getGst()/100)))*(batch.getGst()/100)) * itemReq.getQty();
+            double amount = netRate * itemReq.getQty();
 
             item.setGstAmount(gst);
             item.setTotalAmount(amount);
-
             totalGst += gst;
             totalAmount += amount;
-
             items.add(item);
         }
 
@@ -120,3 +130,5 @@ public class PurchaseService {
         return purchaseRepo.save(purchase);
     }
 }
+
+
