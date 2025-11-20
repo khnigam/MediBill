@@ -1,9 +1,11 @@
 package com.ujjwalMedical.controller;
 
+import com.ujjwalMedical.dto.PurchaseRequest;
 import com.ujjwalMedical.entity.Purchase;
-import com.ujjwalMedical.service.PurchaseService;
 import com.ujjwalMedical.repository.PurchaseRepository;
+import com.ujjwalMedical.service.PurchaseService;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -20,8 +22,8 @@ public class PurchaseController {
     }
 
     @PostMapping
-    public Purchase createPurchase(@RequestBody Purchase p) {
-        return purchaseService.createPurchase(p);
+    public Purchase createPurchase(@RequestBody PurchaseRequest request) {
+        return purchaseService.createPurchase(request);
     }
 
     @GetMapping("/{id}")

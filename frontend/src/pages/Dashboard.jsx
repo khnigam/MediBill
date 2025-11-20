@@ -20,7 +20,7 @@ export default function Dashboard() {
         <main className={`p-3 max-w-7xl mx-auto transition-all duration-300 ${sidebarOpen ? "ml-0" : "ml-0"}`}>
           <h1 className="text-3xl font-semibold text-gray-900 mb-6">Dashboard</h1>
 
-          {loading && !summary ? (
+          {!summary ? (
             <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
               Loading dashboard...
             </div>

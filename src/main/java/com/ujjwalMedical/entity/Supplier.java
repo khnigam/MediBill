@@ -1,4 +1,5 @@
 package com.ujjwalMedical.entity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.List;
 
@@ -15,6 +16,7 @@ public class Supplier {
     private String address;
 
     @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Purchase> purchases;
 
     // Getters and Setters

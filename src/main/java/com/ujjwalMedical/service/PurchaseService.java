@@ -1,79 +1,122 @@
 package com.ujjwalMedical.service;
 
+import com.ujjwalMedical.dto.PurchaseItemRequest;
+import com.ujjwalMedical.dto.PurchaseRequest;
 import com.ujjwalMedical.entity.*;
-import com.ujjwalMedical.repository.*;
+import com.ujjwalMedical.repository.BatchRepository;
+import com.ujjwalMedical.repository.MedicineRepository;
+import com.ujjwalMedical.repository.PurchaseRepository;
+import com.ujjwalMedical.repository.SupplierRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.util.*;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class PurchaseService {
 
     private final PurchaseRepository purchaseRepo;
-    private final BatchRepository batchRepo;
     private final MedicineRepository medicineRepo;
     private final SupplierRepository supplierRepo;
-
-    public PurchaseService(PurchaseRepository purchaseRepo, BatchRepository batchRepo,
-                           MedicineRepository medicineRepo, SupplierRepository supplierRepo) {
-        this.purchaseRepo = purchaseRepo;
-        this.batchRepo = batchRepo;
-        this.medicineRepo = medicineRepo;
-        this.supplierRepo = supplierRepo;
+    private final BatchRepository batchRepo;
+    private Medicine createNewMedicine(String name) {
+        Medicine m = new Medicine();
+        m.setName(name);
+        m.setSku(null);
+        m.setBrand(null);
+        return medicineRepo.save(m);
     }
 
-    @Transactional
-    public Purchase createPurchase(Purchase purchaseRequest) {
-        // resolve supplier (optional check)
-        if (purchaseRequest.getSupplier() != null && purchaseRequest.getSupplier().getId() != null) {
-            Supplier s = supplierRepo.findById(purchaseRequest.getSupplier().getId())
-                    .orElseThrow(() -> new RuntimeException("Supplier not found"));
-            purchaseRequest.setSupplier(s);
-        }
+    private LocalDate parseExpiry(String d) {
+        if (d == null || d.length() != 8) return null;
+        int day = Integer.parseInt(d.substring(0, 2));
+        int month = Integer.parseInt(d.substring(2, 4));
+        int year = Integer.parseInt(d.substring(4, 8));
+        return LocalDate.of(year, month, day);
+    }
 
-        // For each item => find/create batch and update quantity
-        List<PurchaseItem> items = purchaseRequest.getItems();
-        for (PurchaseItem item : items) {
-            Long medId = item.getMedicine().getId();
-            Medicine med = medicineRepo.findById(medId)
-                    .orElseThrow(() -> new RuntimeException("Medicine not found id=" + medId));
-            item.setMedicine(med);
-            String batchNo = item.getBatchNo();
-            Batch batch = null;
-            if (batchNo != null) {
-                Optional<Batch> existing = batchRepo.findByMedicineIdAndBatchNo(medId, batchNo);
-                if (existing.isPresent()) {
-                    batch = existing.get();
-                    // update rates if changed
-                    if (item.getNetRate() != null) batch.setPurchaseRate(item.getNetRate());
-                    if (item.getBillingRate() != null) batch.setMrp(item.getBillingRate());
-                    // increase quantity
-                    int newQty = (batch.getQuantity() == null ? 0 : batch.getQuantity()) + (item.getQuantity() == null ? 0 : item.getQuantity());
-                    batch.setQuantity(newQty);
-                } else {
-                    // create new batch
-                    batch = new Batch();
-                    batch.setMedicine(med);
-                    batch.setBatchNo(batchNo);
-                    batch.setPurchaseRate(item.getNetRate());
-                    batch.setMrp(item.getBillingRate());
-                    batch.setQuantity(item.getQuantity() == null ? 0 : item.getQuantity());
-                }
-                batch = batchRepo.save(batch);
-                item.setBatch(batch);
+
+    public Purchase createPurchase(PurchaseRequest req) {
+
+        Supplier supplier = supplierRepo.findById(req.getDistributor_id())
+                .orElseThrow(() -> new RuntimeException("Supplier not found"));
+
+        Purchase purchase = new Purchase();
+        purchase.setInvoiceNo(req.getInvoice_number());
+        purchase.setSupplier(supplier);
+        purchase.setPurchaseDate(req.getPurchase_date());
+        purchase.setPurchaseType(req.getPurchase_type());
+        purchase.setPaymentType(req.getPayment_type());
+        purchase.setRateType(req.getRate_type());
+        purchase.setTaxType(req.getTax_type());
+
+        List<PurchaseItem> items = new ArrayList<>();
+
+        double totalGst = 0;
+        double totalAmount = 0;
+
+        for (PurchaseItemRequest itemReq : req.getMedicines()) {
+
+            Medicine medicine;
+
+            if (itemReq.getMedicine_id() != null) {
+                medicine = medicineRepo.findById(itemReq.getMedicine_id())
+                        .orElseThrow(() -> new RuntimeException("Medicine not found"));
+            } else {
+                // create new medicine with setters
+                medicine = new Medicine();
+                medicine.setName(itemReq.getMedicine_name());
+                medicine.setSku(null);
+                medicine.setBrand(null);
+
+                medicine = medicineRepo.save(medicine);
             }
-            // link item -> purchase will be set later
+
+
+            Batch batch = batchRepo
+                    .findByMedicineIdAndBatchNo(medicine.getId(), itemReq.getBatch())
+                    .orElse(null);
+
+            if (batch == null) {
+                batch = new Batch();
+                batch.setBatchNo(itemReq.getBatch());
+                batch.setMedicine(medicine);
+                batch.setExpiryDate(parseExpiry(itemReq.getExpiry()));
+
+                batch.setPurchaseRate(itemReq.getNet_unit_price());
+                batchRepo.save(batch);
+            }
+
+            PurchaseItem item = new PurchaseItem();
+            item.setPurchase(purchase);
+            item.setMedicine(medicine);
+            item.setBatch(batch);
+            item.setBatchNo(itemReq.getBatch());
+            item.setQuantity(itemReq.getQty());
+            item.setUnitPrice(itemReq.getUnit_price());
+            item.setNetUnitPrice(itemReq.getNet_unit_price());
+            item.setTaxPercent(itemReq.getTax());
+            item.setExpiry(parseExpiry(itemReq.getExpiry()));
+
+            double gst = (itemReq.getNet_unit_price() - itemReq.getUnit_price()) * itemReq.getQty();
+            double amount = itemReq.getNet_unit_price() * itemReq.getQty();
+
+            item.setGstAmount(gst);
+            item.setTotalAmount(amount);
+
+            totalGst += gst;
+            totalAmount += amount;
+
+            items.add(item);
         }
 
-        // Save purchase and cascade items
-        purchaseRequest.setCreatedAt(java.time.LocalDateTime.now());
-        Purchase saved = purchaseRepo.save(purchaseRequest);
+        purchase.setTotalGst(totalGst);
+        purchase.setTotalAmount(totalAmount);
+        purchase.setItems(items);
 
-        // set purchase reference on items and save handled by cascade if mapped
-        for (PurchaseItem it : saved.getItems()) {
-            it.setPurchase(saved);
-        }
-
-        return saved;
+        return purchaseRepo.save(purchase);
     }
 }
