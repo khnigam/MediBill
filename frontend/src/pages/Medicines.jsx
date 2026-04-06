@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 const initialInventory = [
   {
@@ -51,37 +50,37 @@ const initialInventory = [
     expiryDate: "06/2024",
   },
 ];
+
 function MedicineInventory() {
   const [inventory, setInventory] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-const [batchModal, setBatchModal] = useState(null);
-const [batchList, setBatchList] = useState([]);
+  const [batchModal, setBatchModal] = useState(null);
+  const [batchList, setBatchList] = useState([]);
 
   // Pagination
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 12;
 
   const totalMedicines = inventory.length;
-  const itemsLowOnStock = inventory.filter(i => i.availableStock < 50).length;
+  const itemsLowOnStock = inventory.filter(i => i && typeof i.availableStock === "number" && i.availableStock < 50).length;
   const itemsExpiringSoon = 0;
 
-    const openBatchModal = async (medicine) => {
-      setBatchModal(medicine);
+  const openBatchModal = async (medicine) => {
+    setBatchModal(medicine);
 
-      try {
-        const response = await fetch(`http://localhost:8080/api/medicines/${medicine.id}/batches`);
-        const data = await response.json();
-        setBatchList(data);
-      } catch (err) {
-        console.error("Error loading batches", err);
-      }
-    };
+    try {
+      const response = await fetch(`http://localhost:8080/api/medicines/${medicine.id}/batches`);
+      const data = await response.json();
+      setBatchList(data);
+    } catch (err) {
+      console.error("Error loading batches", err);
+    }
+  };
 
-const closeBatchModal = () => {
-  setBatchModal(null);
-  setBatchList([]);
-};
-
+  const closeBatchModal = () => {
+    setBatchModal(null);
+    setBatchList([]);
+  };
 
   useEffect(() => {
     fetch("http://localhost:8080/api/medicines/summary")
@@ -99,10 +98,22 @@ const closeBatchModal = () => {
       .catch(err => console.error("Error fetching inventory", err));
   }, []);
 
-  const filteredInventory = inventory.filter(item =>
-    item.medicineName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.genericName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // --- FIXED SEARCH LOGIC ---
+  const filteredInventory = React.useMemo(() => {
+    if (!searchTerm.trim()) return inventory;
+
+    const term = searchTerm.toLowerCase();
+
+    // Filter out badly formed objects (should not throw if field is missing)
+    return inventory.filter(item => {
+      if (!item || (typeof item !== "object")) return false;
+      // String coercion to avoid .toLowerCase() crashes on non-string
+      const medName = String(item.medicineName ?? "").toLowerCase();
+      const generic = String(item.genericName ?? "").toLowerCase();
+      return medName.includes(term) || generic.includes(term);
+    });
+  }, [inventory, searchTerm]);
+  // --- END FIX ---
 
   // handle page reset on search
   useEffect(() => setPage(1), [searchTerm]);
@@ -150,7 +161,8 @@ const closeBatchModal = () => {
 
         <tbody>
           {paginatedItems.map(item => {
-            const lowStock = item.availableStock < 50;
+            if (!item) return null;
+            const lowStock = typeof item.availableStock === "number" && item.availableStock < 50;
             return (
               <tr
                 key={item.id}
@@ -162,9 +174,9 @@ const closeBatchModal = () => {
                 <td className="p-3 text-gray-600">{item.genericName}</td>
                 <td className={`p-3 ${lowStock ? "text-red-600 font-semibold" : ""}`}>
                   {lowStock ? "● " : ""}
-                  {item.availableStock.toLocaleString()} units
+                  {typeof item.availableStock === "number" ? item.availableStock.toLocaleString() : 0} units
                 </td>
-                <td className="p-3">₹{item.unitPrice.toFixed(2)}</td>
+                <td className="p-3">₹{(item.unitPrice ?? 0).toFixed(2)}</td>
                 <td className="p-3 space-x-2 text-gray-600">
                   <button>✏️</button>
                   <button>🗑️</button>
@@ -223,7 +235,6 @@ const closeBatchModal = () => {
         </div>
       )}
 
-
       {/* Pagination Footer */}
       <div className="mt-4 flex justify-between text-gray-600">
         <div>
@@ -249,9 +260,9 @@ const closeBatchModal = () => {
 
           <button
             onClick={() => setPage(p => Math.min(p + 1, totalPages))}
-            disabled={page === totalPages}
+            disabled={page === totalPages || totalPages === 0}
             className={`border px-3 py-1 rounded ${
-              page === totalPages ? "bg-gray-200 cursor-not-allowed" : ""
+              page === totalPages || totalPages === 0 ? "bg-gray-200 cursor-not-allowed" : ""
             }`}
           >
             Next

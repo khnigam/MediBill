@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface MedicineRepository extends JpaRepository<Medicine, Long> {
@@ -28,4 +29,26 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
 
     @Query("SELECT m FROM Medicine m WHERE LOWER(m.name) LIKE %:query%")
     List<Medicine> searchByName(@Param("query") String query);
+
+    @Query("""
+        SELECT COUNT(m)
+        FROM Medicine m
+        WHERE (
+            SELECT COALESCE(SUM(b.quantity), 0)
+            FROM Batch b
+            WHERE b.medicine = m
+        ) < :threshold
+    """)
+    long countMedicinesWithTotalQuantityLessThan(@Param("threshold") long threshold);
+
+    @Query("""
+        SELECT COUNT(m)
+        FROM Medicine m
+        WHERE (
+            SELECT MIN(b.expiryDate)
+            FROM Batch b
+            WHERE b.medicine = m
+        ) <= :cutoffDate
+    """)
+    long countMedicinesExpiringOnOrBefore(@Param("cutoffDate") LocalDate cutoffDate);
 }
