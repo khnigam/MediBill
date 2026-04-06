@@ -45,7 +45,7 @@ export default function Dashboard() {
                 <StatCard
                   title="Expiring Soon"
                   value={summary?.expiringSoon ?? 0}
-                  sub={<span className="text-gray-500">Next 30 days</span>}
+                  sub={<span className="text-gray-500">Next 3 months</span>}
                 />
               </div>
 

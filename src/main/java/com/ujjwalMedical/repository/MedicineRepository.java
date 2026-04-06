@@ -51,4 +51,14 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
         ) <= :cutoffDate
     """)
     long countMedicinesExpiringOnOrBefore(@Param("cutoffDate") LocalDate cutoffDate);
+
+    @Query("""
+        SELECT m.name, COALESCE(SUM(b.quantity), 0)
+        FROM Medicine m
+        LEFT JOIN m.batches b
+        GROUP BY m.id, m.name
+        HAVING COALESCE(SUM(b.quantity), 0) < :threshold
+        ORDER BY COALESCE(SUM(b.quantity), 0) ASC
+    """)
+    List<Object[]> findLowStockMedicineRows(@Param("threshold") long threshold);
 }

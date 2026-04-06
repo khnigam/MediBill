@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface SaleRepository extends JpaRepository<Sale, Long> {
 
@@ -16,5 +17,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
           AND s.saleDate < :endDate
     """)
     Double sumTotalAmountBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    List<Sale> findTop10ByOrderBySaleDateDescIdDesc();
 }
 

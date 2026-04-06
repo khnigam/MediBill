@@ -28,6 +28,34 @@ public class MedicineController {
         return service.searchMedicines(query);
     }
 
+    @GetMapping("/dashboardStats")
+    public Map<String, Object> getDashboardStats() {
+        // Total Sales (This Month)
+        double totalSalesThisMonth = service.getTotalSalesThisMonth();
+
+        // Low Stock Alerts
+        int lowStockCount = service.countLowStockMedicines();
+
+        // Expiring Soon (in 3 months or less)
+        int expiringSoonCount = service.countExpiringSoonMedicines(3);
+
+        return Map.of(
+                "totalSalesThisMonth", totalSalesThisMonth,
+                "lowStockCount", lowStockCount,
+                "expiringSoon", expiringSoonCount
+        );
+    }
+
+    @GetMapping("/dashboard/lowStock")
+    public List<Map<String, Object>> getDashboardLowStock() {
+        return service.getLowStockAlerts(50);
+    }
+
+    @GetMapping("/dashboard/recentSales")
+    public List<Map<String, Object>> getDashboardRecentSales() {
+        return service.getRecentSales();
+    }
+
 
 
 }

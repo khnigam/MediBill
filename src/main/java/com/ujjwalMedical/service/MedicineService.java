@@ -2,6 +2,7 @@ package com.ujjwalMedical.service;
 
 import com.ujjwalMedical.dto.MedicineSummaryDTO;
 import com.ujjwalMedical.entity.Medicine;
+import com.ujjwalMedical.entity.Sale;
 import com.ujjwalMedical.repository.MedicineRepository;
 import com.ujjwalMedical.repository.SaleRepository;
 import org.springframework.stereotype.Service;
@@ -62,6 +63,47 @@ public class MedicineService {
     public int countExpiringSoonMedicines(int months) {
         LocalDate cutoff = LocalDate.now().plusMonths(months);
         return (int) repo.countMedicinesExpiringOnOrBefore(cutoff);
+    }
+
+    public List<Map<String, Object>> getLowStockAlerts(int threshold) {
+        return repo.findLowStockMedicineRows(threshold).stream().map(row -> {
+            String name = row[0] == null ? "" : String.valueOf(row[0]);
+            int stock = row[1] instanceof Number ? ((Number) row[1]).intValue() : 0;
+
+            String levelClass;
+            if (stock < 15) {
+                levelClass = "critical";
+            } else if (stock < 30) {
+                levelClass = "warning";
+            } else {
+                levelClass = "ok";
+            }
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("name", name);
+            item.put("stock", stock);
+            item.put("levelClass", levelClass);
+            return item;
+        }).toList();
+    }
+
+    public List<Map<String, Object>> getRecentSales() {
+        return saleRepo.findTop10ByOrderBySaleDateDescIdDesc().stream().map(this::toRecentSaleItem).toList();
+    }
+
+    private Map<String, Object> toRecentSaleItem(Sale sale) {
+        String invoiceNo = sale.getInvoiceNumber() == null ? "-" : sale.getInvoiceNumber();
+        String customerName = sale.getCustomer() != null && sale.getCustomer().getName() != null
+                ? sale.getCustomer().getName()
+                : "Walk-in Customer";
+        double amount = sale.getTotalAmount() == null ? 0.0 : sale.getTotalAmount();
+
+        Map<String, Object> item = new HashMap<>();
+        item.put("type", "sale");
+        item.put("title", "Sale #" + invoiceNo);
+        item.put("sub", customerName);
+        item.put("amount", amount);
+        return item;
     }
 
 }
