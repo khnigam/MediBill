@@ -3,6 +3,7 @@ package com.ujjwalMedical.controller;
 import com.ujjwalMedical.dto.BatchDTO;
 import com.ujjwalMedical.entity.Batch;
 import com.ujjwalMedical.repository.BatchRepository;
+import com.ujjwalMedical.service.MedicineService;
 
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -13,9 +14,11 @@ import java.util.List;
 public class MedicineBatchController {
 
     private final BatchRepository batchRepository;
+    private final MedicineService medicineService;
 
-    public MedicineBatchController(BatchRepository batchRepository) {
+    public MedicineBatchController(BatchRepository batchRepository, MedicineService medicineService) {
         this.batchRepository = batchRepository;
+        this.medicineService = medicineService;
     }
 
     @GetMapping("/{medicineId}/batches")
@@ -30,8 +33,14 @@ public class MedicineBatchController {
                         b.getExpiryDate(),
                         b.getMrp(),
                         b.getPurchaseRate(),
-                        b.getQuantity()
+                        b.getQuantity(),
+                        b.getActive() == null ? true : b.getActive()
                 ))
                 .toList();
+    }
+
+    @DeleteMapping("/batches/{batchId}")
+    public void deleteBatch(@PathVariable Long batchId) {
+        medicineService.deleteBatch(batchId);
     }
 }

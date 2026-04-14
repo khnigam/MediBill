@@ -16,4 +16,5 @@ public class MedicineSummaryDTO {
     private LocalDate earliestExpiry;
     private Double highestNetRate;
     private Double highestMrp;
+    private Boolean active;
 }

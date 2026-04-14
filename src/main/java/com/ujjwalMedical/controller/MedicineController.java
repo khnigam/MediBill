@@ -56,6 +56,9 @@ public class MedicineController {
         return service.getRecentSales();
     }
 
-
+    @DeleteMapping("/{medicineId}")
+    public void deleteMedicine(@PathVariable Long medicineId) {
+        service.deleteMedicine(medicineId);
+    }
 
 }

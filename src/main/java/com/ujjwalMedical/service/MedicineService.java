@@ -1,11 +1,18 @@
 package com.ujjwalMedical.service;
 
 import com.ujjwalMedical.dto.MedicineSummaryDTO;
+import com.ujjwalMedical.entity.Batch;
 import com.ujjwalMedical.entity.Medicine;
 import com.ujjwalMedical.entity.Sale;
+import com.ujjwalMedical.repository.BatchRepository;
 import com.ujjwalMedical.repository.MedicineRepository;
+import com.ujjwalMedical.repository.PurchaseItemRepository;
 import com.ujjwalMedical.repository.SaleRepository;
+import com.ujjwalMedical.repository.SaleItemRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,10 +24,22 @@ public class MedicineService {
 
     private final MedicineRepository repo;
     private final SaleRepository saleRepo;
+    private final BatchRepository batchRepo;
+    private final PurchaseItemRepository purchaseItemRepo;
+    private final SaleItemRepository saleItemRepo;
 
-    public MedicineService(MedicineRepository repo, SaleRepository saleRepo) {
+    public MedicineService(
+            MedicineRepository repo,
+            SaleRepository saleRepo,
+            BatchRepository batchRepo,
+            PurchaseItemRepository purchaseItemRepo,
+            SaleItemRepository saleItemRepo
+    ) {
         this.repo = repo;
         this.saleRepo = saleRepo;
+        this.batchRepo = batchRepo;
+        this.purchaseItemRepo = purchaseItemRepo;
+        this.saleItemRepo = saleItemRepo;
     }
 
     public List<MedicineSummaryDTO> getSummary() {
@@ -104,6 +123,29 @@ public class MedicineService {
         item.put("sub", customerName);
         item.put("amount", amount);
         return item;
+    }
+
+    @Transactional
+    public void deleteBatch(Long batchId) {
+        Batch batch = batchRepo.findById(batchId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Batch not found"));
+        batch.setActive(false);
+        batchRepo.save(batch);
+    }
+
+    @Transactional
+    public void deleteMedicine(Long medicineId) {
+        Medicine medicine = repo.findById(medicineId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Medicine not found"));
+        medicine.setActive(false);
+        repo.save(medicine);
+
+        // Keep related batches but mark them disabled as well.
+        List<Batch> batches = batchRepo.findByMedicineId(medicineId);
+        for (Batch b : batches) {
+            b.setActive(false);
+            batchRepo.save(b);
+        }
     }
 
 }

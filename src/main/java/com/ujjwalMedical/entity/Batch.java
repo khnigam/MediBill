@@ -30,4 +30,7 @@ public class Batch {
     private LocalDate expiryDate;
 
     private Integer quantity;
+
+    @Column(nullable = false)
+    private Boolean active = true;
 }

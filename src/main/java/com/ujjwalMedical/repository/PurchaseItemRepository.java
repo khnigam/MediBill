@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface PurchaseItemRepository extends JpaRepository<PurchaseItem, Long> {
     List<PurchaseItem> findByPurchaseIdOrderByIdAsc(Long purchaseId);
+    boolean existsByBatchId(Long batchId);
+    boolean existsByMedicineId(Long medicineId);
 
     @Transactional
     void deleteByPurchaseId(Long purchaseId);

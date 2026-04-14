@@ -18,4 +18,5 @@ public class BatchDTO {
     private Double mrp;
     private Double purchaseRate;
     private Integer quantity;
+    private Boolean active;
 }

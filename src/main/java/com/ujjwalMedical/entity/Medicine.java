@@ -19,6 +19,8 @@ public class Medicine {
     private String name;
     private String sku;
     private String brand;
+    @Column(nullable = false)
+    private Boolean active = true;
     @OneToMany(mappedBy = "medicine", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Batch> batches;

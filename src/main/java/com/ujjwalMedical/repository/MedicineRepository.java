@@ -19,7 +19,8 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
             COALESCE(SUM(b.quantity), 0),
             MIN(b.expiryDate),
             MAX(b.purchaseRate),
-            MAX(b.mrp)
+            MAX(b.mrp),
+            COALESCE(m.active, true)
         )
         FROM Medicine m
         LEFT JOIN m.batches b
@@ -27,7 +28,7 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
     """)
     List<MedicineSummaryDTO> getMedicineSummary();
 
-    @Query("SELECT m FROM Medicine m WHERE LOWER(m.name) LIKE %:query%")
+    @Query("SELECT m FROM Medicine m WHERE LOWER(m.name) LIKE %:query% AND (m.active = true OR m.active IS NULL)")
     List<Medicine> searchByName(@Param("query") String query);
 
     @Query("""

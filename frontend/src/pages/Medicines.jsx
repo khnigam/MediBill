@@ -61,6 +61,24 @@ function MedicineInventory() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 12;
 
+  const fetchInventory = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/medicines/summary");
+      const data = await res.json();
+      const formatted = data.map(m => ({
+        id: m.id,
+        medicineName: m.name,
+        genericName: m.brand,
+        availableStock: m.totalQuantity,
+        unitPrice: m.highestMrp || 0,
+        isActive: m.active !== false,
+      }));
+      setInventory(formatted);
+    } catch (err) {
+      console.error("Error fetching inventory", err);
+    }
+  };
+
   const totalMedicines = inventory.length;
   const itemsLowOnStock = inventory.filter(i => i && typeof i.availableStock === "number" && i.availableStock < 50).length;
   const itemsExpiringSoon = 0;
@@ -77,25 +95,65 @@ function MedicineInventory() {
     }
   };
 
+  const deleteMedicine = async (medicineId) => {
+    const ok = window.confirm("Disable this medicine?");
+    if (!ok) return;
+    try {
+      const res = await fetch(`http://localhost:8080/api/medicines/${medicineId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        let message = `Failed with status ${res.status}`;
+        try {
+          const body = await res.json();
+          message = body?.message || body?.error || message;
+        } catch {
+          const text = await res.text();
+          message = text || message;
+        }
+        throw new Error(message);
+      }
+      if (batchModal?.id === medicineId) closeBatchModal();
+      await fetchInventory();
+    } catch (err) {
+      console.error("Delete medicine failed", err);
+      alert("Disable medicine failed: " + err.message);
+    }
+  };
+
+  const deleteBatch = async (batchId) => {
+    const ok = window.confirm("Disable this batch?");
+    if (!ok || !batchModal?.id) return;
+    try {
+      const res = await fetch(`http://localhost:8080/api/medicines/batches/${batchId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        let message = `Failed with status ${res.status}`;
+        try {
+          const body = await res.json();
+          message = body?.message || body?.error || message;
+        } catch {
+          const text = await res.text();
+          message = text || message;
+        }
+        throw new Error(message);
+      }
+      await openBatchModal(batchModal);
+      await fetchInventory();
+    } catch (err) {
+      console.error("Delete batch failed", err);
+      alert("Disable batch failed: " + err.message);
+    }
+  };
+
   const closeBatchModal = () => {
     setBatchModal(null);
     setBatchList([]);
   };
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/medicines/summary")
-      .then(res => res.json())
-      .then(data => {
-        const formatted = data.map(m => ({
-          id: m.id,
-          medicineName: m.name,
-          genericName: m.brand,
-          availableStock: m.totalQuantity,
-          unitPrice: m.highestMrp || 0,
-        }));
-        setInventory(formatted);
-      })
-      .catch(err => console.error("Error fetching inventory", err));
+    fetchInventory();
   }, []);
 
   // --- FIXED SEARCH LOGIC ---
@@ -163,14 +221,17 @@ function MedicineInventory() {
           {paginatedItems.map(item => {
             if (!item) return null;
             const lowStock = typeof item.availableStock === "number" && item.availableStock < 50;
+            const isDisabled = item.isActive === false;
             return (
               <tr
                 key={item.id}
-                className="border-b hover:bg-gray-50 cursor-pointer"
+                className={`border-b ${isDisabled ? "opacity-60 bg-gray-100" : "hover:bg-gray-50 cursor-pointer"}`}
                 onClick={() => openBatchModal(item)}
               >
 
-                <td className="p-3 font-semibold">{item.medicineName}</td>
+                <td className="p-3 font-semibold">
+                  {item.medicineName} {isDisabled && <span className="text-xs text-gray-500">(Disabled)</span>}
+                </td>
                 <td className="p-3 text-gray-600">{item.genericName}</td>
                 <td className={`p-3 ${lowStock ? "text-red-600 font-semibold" : ""}`}>
                   {lowStock ? "● " : ""}
@@ -178,8 +239,17 @@ function MedicineInventory() {
                 </td>
                 <td className="p-3">₹{(item.unitPrice ?? 0).toFixed(2)}</td>
                 <td className="p-3 space-x-2 text-gray-600">
-                  <button>✏️</button>
-                  <button>🗑️</button>
+                  <button disabled={isDisabled}>✏️</button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isDisabled) return;
+                      deleteMedicine(item.id);
+                    }}
+                    title={isDisabled ? "Already disabled" : "Disable medicine"}
+                  >
+                    {isDisabled ? "🚫" : "🗑️"}
+                  </button>
                 </td>
               </tr>
             );
@@ -208,19 +278,32 @@ function MedicineInventory() {
                   <th className="p-2 text-left">MRP</th>
                   <th className="p-2 text-left">Purchase Rate</th>
                   <th className="p-2 text-left">Qty</th>
+                  <th className="p-2 text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {batchList.map((b, idx) => (
+                {(batchList ?? []).map((b = {}, idx) => (
                   <tr key={idx} className="border-b">
-                    <td className="p-2">{b.batchNo}</td>
-                    <td className="p-2">{b.expiryDate}</td>
-                    <td className="p-2">₹{b.mrp.toFixed(2)}</td>
-                    <td className="p-2">₹{b.purchaseRate.toFixed(2)}</td>
-                    <td className="p-2">{b.quantity}</td>
+                    <td className="p-2">{b.batchNo ?? ""}</td>
+                    <td className="p-2">{b.expiryDate ?? ""}</td>
+                    <td className="p-2">₹{typeof b.mrp === "number" ? b.mrp.toFixed(2) : "0.00"}</td>
+                    <td className="p-2">₹{typeof b.purchaseRate === "number" ? b.purchaseRate.toFixed(2) : "0.00"}</td>
+                    <td className="p-2">{typeof b.quantity === "number" ? b.quantity : 0}</td>
+                    <td className="p-2 text-right">
+                      <button
+                        className={`text-sm ${b.active === false ? "text-gray-400" : "text-red-600 hover:underline"}`}
+                        onClick={() => {
+                          if (b.active === false) return;
+                          deleteBatch(b.id);
+                        }}
+                      >
+                        {b.active === false ? "Disabled" : "Disable"}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
+         
             </table>
 
             <div className="mt-4 text-right">
