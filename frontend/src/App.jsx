@@ -2,6 +2,7 @@ import {BrowserRouter as Router, Routes, Route} from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Header from "./components/Header";
 import Purchase from "./pages/Purchase";
+import PurchaseView from "./pages/PurchaseView";
 import Sale from "./pages/Sale";
 import Medicines from "./pages/Medicines";
 import Suppliers from "./pages/Suppliers";
@@ -23,6 +24,7 @@ export default function App() {
                     </div>
                 }/>
                 <Route path="/purchase" element={<Purchase/>}/>
+                <Route path="/purchase/view/:id" element={<PurchaseView/>}/>
                 <Route path="/sale" element={<Sale/>}/>
                 <Route path="/medicines" element={<Medicines/>}/>
                 <Route path="/suppliers" element={<Suppliers/>}/>

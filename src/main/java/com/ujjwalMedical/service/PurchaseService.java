@@ -63,7 +63,8 @@ public class PurchaseService {
 
             Medicine medicine;
             Double netRate;
-            if (req.getRate_type().equals("dummy") && itemReq.getActual_price() != null &&  itemReq.getActual_price() > 0) {
+            if (("dummy".equals(req.getRate_type()) || "actual".equals(req.getRate_type()))
+                    && itemReq.getActual_price() != null && itemReq.getActual_price() > 0) {
                 netRate = itemReq.getActual_price();
             }else {
                 netRate = itemReq.getNet_unit_price();

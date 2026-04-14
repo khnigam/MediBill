@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { getPurchaseDetails, updatePurchase } from "../api";
 
 /**
  * EnterPurchasePage.jsx
@@ -16,6 +18,12 @@ import React, { useEffect, useState } from "react";
  */
 
 export default function EnterPurchasePage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const purchaseId = searchParams.get("purchaseId");
+  const mode = searchParams.get("mode") || "create";
+  const isViewMode = mode === "view";
+  const isEditMode = mode === "edit" && !!purchaseId;
   // static defaults (kept for fallback)
   const fallbackDistributors = [
     "Global Pharma",
@@ -101,6 +109,55 @@ export default function EnterPurchasePage() {
     fetchMedicines();
     fetchSuppliers();
   }, []);
+
+  useEffect(() => {
+    if (!purchaseId) return;
+    let mounted = true;
+
+    const toDdMmYyyy = (dateStr) => {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (Number.isNaN(d.getTime())) return "";
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      return `${dd}${mm}${yyyy}`;
+    };
+
+    getPurchaseDetails(purchaseId)
+      .then((details) => {
+        if (!mounted || !details) return;
+        setDate(details.purchaseDate || "");
+        setInvoiceNumber(details.invoiceNo || "");
+        setSupplierId(details.supplierId || "");
+        setSupplierName(details.supplierName || "");
+        setPaymentType(details.paymentType || "cash");
+        setPurchaseType(details.purchaseType || "purchase");
+        setTaxType(details.taxType || "exclusive");
+        setRateType(details.rateType || "none");
+
+        const mappedRows = (details.items || []).map((it) => ({
+          ...emptyRowTemplate,
+          medicineId: it.medicineId || null,
+          medicineName: it.medicineName || "",
+          batch: it.batchNo || "",
+          qty: it.quantity ?? "",
+          unitPrice: it.unitPrice ?? 0,
+          tax: it.taxPercent ?? 5,
+          mrp: it.mrp ?? "",
+          expiry: toDdMmYyyy(it.expiry),
+          apiTax: false,
+        }));
+        setRows(mappedRows.length ? mappedRows : [{ ...emptyRowTemplate }]);
+      })
+      .catch((err) => {
+        console.error("Failed to load purchase details", err);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [purchaseId]);
 
   // focus logic
   useEffect(() => {
@@ -417,7 +474,7 @@ export default function EnterPurchasePage() {
       distributor_id: supplierId || null,
       purchase_type: purchaseType,
       payment_type: paymentType,
-      rate_type: rateType === "actual" ? "dummy" : "actual",
+      rate_type: rateType,
       tax_type: taxType,
       medicines: medicinesPayload
     };
@@ -426,25 +483,59 @@ export default function EnterPurchasePage() {
   };
 
   const savePurchase = async () => {
+    if (isViewMode) return;
     const payload = buildPayload();
     console.log("Saving purchase payload:", payload);
 
     try {
-      const res = await fetch("http://localhost:8080/api/purchases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      if (isEditMode) {
+        const updatePayload = {
+          purchaseDate: date,
+          invoiceNo: invoiceNumber,
+          supplierId: supplierId || null,
+          distributor_id: supplierId || null,
+          paymentType,
+          purchaseType,
+          purchase_type: purchaseType,
+          taxType,
+          tax_type: taxType,
+          rateType,
+          rate_type: rateType,
+          items: rows
+            .filter(row => row.medicineName || row.batch || (row.qty && Number(row.qty) > 0) || (row.unitPrice && Number(row.unitPrice) > 0))
+            .map((row) => {
+              const vals = computeRowValues(row);
+              return {
+                medicineId: row.medicineId ?? null,
+                medicineName: row.medicineName ?? "",
+                batchNo: row.batch ?? "",
+                quantity: Number(row.qty) || 0,
+                unitPrice: Number(row.unitPrice) || 0,
+                netUnitPrice: Number(vals.netUnitInclTax) || 0,
+                taxPercent: Number(row.tax) || 0,
+                mrp: row.mrp || "",
+                expiry: row.expiry || "",
+              };
+            }),
+        };
+        await updatePurchase(purchaseId, updatePayload);
+        alert("Purchase updated successfully");
+      } else {
+        const res = await fetch("http://localhost:8080/api/purchases", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Server error: ${res.status} ${text}`);
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Server error: ${res.status} ${text}`);
+        }
+        await res.json();
+        alert("Purchase saved successfully");
       }
 
-      const data = await res.json();
-      console.log("Saved purchase:", data);
-      alert("Purchase saved successfully");
-      // optionally clear form or redirect
+      navigate("/purchases");
     } catch (err) {
       console.error("Save failed", err);
       alert("Save failed: " + err.message);
@@ -458,6 +549,7 @@ export default function EnterPurchasePage() {
       <div className="mb-6" style={{ height: "40px" }} />
       <main className="bg-white rounded-lg shadow p-6 max-w-7xl mx-auto">
 
+        <fieldset disabled={isViewMode} className={isViewMode ? "opacity-95" : ""}>
 
         {/* Invoice + Options */}
         <section className="mb-6 bg-gray-100 p-4 rounded">
@@ -532,8 +624,9 @@ export default function EnterPurchasePage() {
             <div>
               <label className="block text-sm font-medium mb-1">Rate Type</label>
               <select value={rateType} onChange={(e) => setRateType(e.target.value)} className="w-full rounded border border-gray-300 px-3 py-2">
-                <option value="none">Actual</option>
-                <option value="actual">Dummy Price</option>
+                <option value="none">Net Unit Price</option>
+                <option value="actual">Actual Price</option>
+                <option value="dummy">Dummy Price</option>
               </select>
             </div>
           </div>
@@ -552,8 +645,8 @@ export default function EnterPurchasePage() {
                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">Qty</th>
                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">Unit Price</th>
 
-                {rateType === "actual" && (
-                  <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">Net Price</th>
+                {(rateType === "dummy") && (
+                  <th className="border border-gray-300 px-3 py-2 text-right text-sm font-semibold">Actual Price</th>
                 )}
 
                 {taxType === "exclusive" && (
@@ -729,7 +822,7 @@ export default function EnterPurchasePage() {
                       />
                     </td>
 
-                    {rateType === "actual" && (
+                    {(rateType === "dummy") && (
                       <td className="w-28 border border-gray-300 px-3 py-2 text-right">
                         <input
                           id={`cell-${i}-actualPrice`}
@@ -776,11 +869,21 @@ export default function EnterPurchasePage() {
             <div className="text-lg font-bold text-blue-600">Grand Total ₹{totals.grandTotal.toFixed(2)}</div>
           </div>
         </section>
+        </fieldset>
 
         {/* actions */}
         <section className="mt-6 flex justify-end space-x-4">
-          <button onClick={() => {if (!window.confirm("Are you sure?"))  { /* reset if required */ }}} className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100">Cancel</button>
-          <button onClick={savePurchase} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save Purchase</button>
+          <button
+            onClick={() => navigate("/purchases")}
+            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+          >
+            Back
+          </button>
+          {!isViewMode && (
+            <button onClick={savePurchase} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+              {isEditMode ? "Update Purchase" : "Save Purchase"}
+            </button>
+          )}
         </section>
       </main>
     </div>

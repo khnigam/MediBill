@@ -1,42 +1,6 @@
-import React, { useState } from "react";
-
-const purchasesData = [
-  {
-    purchaseDate: "2024-10-26",
-    supplierName: "Global Pharma",
-    purchaseId: "PO-10524",
-    totalAmount: 2450.0,
-    status: "Received",
-  },
-  {
-    purchaseDate: "2024-10-25",
-    supplierName: "MedSource Inc.",
-    purchaseId: "PO-10523",
-    totalAmount: 1800.5,
-    status: "Pending",
-  },
-  {
-    purchaseDate: "2024-10-25",
-    supplierName: "HealthWell Supplies",
-    purchaseId: "PO-10522",
-    totalAmount: 5230.75,
-    status: "Paid",
-  },
-  {
-    purchaseDate: "2024-10-24",
-    supplierName: "CureAll Distributors",
-    purchaseId: "PO-10521",
-    totalAmount: 780.0,
-    status: "Received",
-  },
-  {
-    purchaseDate: "2024-10-22",
-    supplierName: "Global Pharma",
-    purchaseId: "PO-10520",
-    totalAmount: 3115.2,
-    status: "Received",
-  },
-];
+import React, { useEffect, useMemo, useState } from "react";
+import { deletePurchase, getRecentPurchases } from "../api";
+import { useNavigate } from "react-router-dom";
 
 const statusColors = {
   Received: "bg-green-200 text-green-700",
@@ -45,21 +9,39 @@ const statusColors = {
 };
 
 export default function RecentPurchases() {
+  const [purchasesData, setPurchasesData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState("date");
   const [statusFilter, setStatusFilter] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    const query = search.trim();
+    const effectiveQuery = query.length >= 3 ? query : "";
+
+    getRecentPurchases(effectiveQuery)
+      .then((data) => {
+        if (!mounted) return;
+        setPurchasesData(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setPurchasesData([]);
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [search]);
 
   function filterAndSortData() {
     let data = purchasesData;
-
-    if (search.trim()) {
-      const lcSearch = search.toLowerCase();
-      data = data.filter(
-        (p) =>
-          p.supplierName.toLowerCase().includes(lcSearch) ||
-          p.purchaseId.toLowerCase().includes(lcSearch)
-      );
-    }
 
     if (statusFilter) {
       data = data.filter((p) => p.status === statusFilter);
@@ -76,7 +58,31 @@ export default function RecentPurchases() {
     return data;
   }
 
-  const filteredData = filterAndSortData();
+  const filteredData = useMemo(() => filterAndSortData(), [sortKey, statusFilter, purchasesData]);
+
+  const openPurchase = (purchaseId, mode = "view") => {
+    const row = purchasesData.find((p) => p.purchaseId === purchaseId);
+    if (!row?.id) return;
+    if (mode === "view") {
+      navigate(`/purchase/view/${row.id}`);
+      return;
+    }
+    navigate(`/purchase?purchaseId=${row.id}&mode=edit`);
+  };
+
+  const handleDelete = async (purchaseId) => {
+    const row = purchasesData.find((p) => p.purchaseId === purchaseId);
+    if (!row?.id) return;
+    if (!window.confirm(`Delete purchase ${purchaseId}?`)) return;
+    try {
+      await deletePurchase(row.id);
+      const refreshed = await getRecentPurchases(search.trim().length >= 3 ? search.trim() : "");
+      setPurchasesData(Array.isArray(refreshed) ? refreshed : []);
+    } catch (e) {
+      console.error("Failed to delete purchase", e);
+      alert("Failed to delete purchase");
+    }
+  };
 
   return (
 
@@ -88,7 +94,10 @@ export default function RecentPurchases() {
             Manage and track all incoming stock and purchase orders.
           </p>
         </div>
-        <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-1">
+        <button
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-1"
+          onClick={() => navigate("/purchase")}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-5 w-5"
@@ -146,7 +155,14 @@ export default function RecentPurchases() {
             </tr>
           </thead>
           <tbody>
-            {filteredData.length === 0 && (
+            {loading && (
+              <tr>
+                <td colSpan={6} className="text-center py-6 text-gray-400 italic select-none">
+                  Loading purchases...
+                </td>
+              </tr>
+            )}
+            {!loading && filteredData.length === 0 && (
               <tr>
                 <td
                   colSpan={6}
@@ -158,15 +174,17 @@ export default function RecentPurchases() {
             )}
             {filteredData.map((purchase, idx) => (
               <tr
-                key={purchase.purchaseId}
+                key={`${purchase.id ?? "noid"}-${purchase.purchaseId ?? "nopurchaseid"}-${idx}`}
                 className={idx % 2 === 0 ? "bg-gray-50" : ""}
               >
                 <td className="px-6 py-4">{purchase.purchaseDate}</td>
                 <td className="px-6 py-4">{purchase.supplierName}</td>
                 <td className="px-6 py-4 text-blue-600 cursor-pointer hover:underline">
-                  {purchase.purchaseId}
+                  <button onClick={() => openPurchase(purchase.purchaseId, "view")} className="hover:underline">
+                    {purchase.purchaseId}
+                  </button>
                 </td>
-                <td className="px-6 py-4">${purchase.totalAmount.toFixed(2)}</td>
+                <td className="px-6 py-4">₹{purchase.totalAmount.toFixed(2)}</td>
                 <td className="px-6 py-4">
                   <span
                     className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${statusColors[purchase.status]}`}
@@ -179,6 +197,7 @@ export default function RecentPurchases() {
                     title="View"
                     className="hover:text-gray-900"
                     aria-label="View"
+                    onClick={() => openPurchase(purchase.purchaseId, "view")}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -204,6 +223,7 @@ export default function RecentPurchases() {
                     title="Edit"
                     className="hover:text-gray-900"
                     aria-label="Edit"
+                    onClick={() => openPurchase(purchase.purchaseId, "edit")}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -218,6 +238,16 @@ export default function RecentPurchases() {
                         strokeLinejoin="round"
                         d="M15.232 5.232l3.536 3.536M9 11l6-6M3 21v-3a4 4 0 014-4h3"
                       />
+                    </svg>
+                  </button>
+                  <button
+                    title="Delete"
+                    className="hover:text-red-600"
+                    aria-label="Delete"
+                    onClick={() => handleDelete(purchase.purchaseId)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 7h12M9 7V4h6v3m-7 4v6m4-6v6m4-10v12a2 2 0 01-2 2H8a2 2 0 01-2-2V7h12z" />
                     </svg>
                   </button>
                 </td>
@@ -243,6 +273,7 @@ export default function RecentPurchases() {
           </button>
         </div>
       </div>
+
     </div>
   );
 }

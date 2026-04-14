@@ -153,3 +153,34 @@ export async function getMedicinesForSearch(query = "") {
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }
+
+export async function getRecentPurchases(query = "") {
+  const q = encodeURIComponent(query);
+  const res = await fetch(`http://localhost:8080/api/purchases/recent?query=${q}`);
+  if (!res.ok) throw new Error(`Recent purchases failed: ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export async function getPurchaseDetails(id) {
+  const res = await fetch(`http://localhost:8080/api/purchases/${id}/details`);
+  if (!res.ok) throw new Error(`Purchase details failed: ${res.status}`);
+  return res.json();
+}
+
+export async function updatePurchase(id, payload) {
+  const res = await fetch(`http://localhost:8080/api/purchases/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Update purchase failed: ${res.status}`);
+  return res.json();
+}
+
+export async function deletePurchase(id) {
+  const res = await fetch(`http://localhost:8080/api/purchases/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`Delete purchase failed: ${res.status}`);
+}
