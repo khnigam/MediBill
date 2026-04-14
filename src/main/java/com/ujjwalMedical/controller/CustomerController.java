@@ -32,7 +32,9 @@ public class CustomerController {
             Customer existing = repo.findById(req.getId())
                     .orElseThrow(() -> new RuntimeException("Customer not found"));
             existing.setName(req.getName());
+            existing.setOwnerName(req.getOwnerName());
             existing.setAddress(req.getAddress());
+            existing.setEmail(req.getEmail());
             existing.setPhoneNumber(req.getPhoneNumber());
             existing.setGstNumber(req.getGstNumber());
             existing.setLicenseNumber(req.getLicenseNumber());

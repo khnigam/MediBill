@@ -82,13 +82,74 @@ export async function getRecentSales() {
         }))
       : [];
   } catch (error) {
-    await wait(200 + Math.random() * 700);
-    if (randomFail()) return Promise.reject(new Error("Network error: recent sales"));
-    return [
-      { type: "sale", title: "Sale #S-2023-015", sub: "City Pharmacy", amount: 320.0 },
-      { type: "sale", title: "Sale #S-2023-014", sub: "HealthFirst Clinic", amount: 1150.5 },
-      { type: "purchase", title: "Purchase #P-2023-010", sub: "MediSupply Co.", amount: 5400.0 },
-      { type: "sale", title: "Sale #S-2023-013", sub: "Wellness Drugstore", amount: 89.9 },
-    ];
+    // Deterministic fallback (no random failures) so dashboard stays stable.
+    return [];
   }
+}
+
+export async function getSalesList() {
+  const res = await fetch("http://localhost:8080/api/sales");
+  if (!res.ok) {
+    throw new Error(`Sales list request failed: ${res.status}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data)
+    ? data.map((item) => ({
+        id: String(item?.id ?? ""),
+        invoiceNumber: String(item?.invoiceNumber ?? "-"),
+        date: item?.date ? String(item.date) : "",
+        customer: String(item?.customer ?? "Walk-in Customer"),
+        totalAmount: Number(item?.totalAmount ?? 0),
+        status: String(item?.status ?? "Completed"),
+      }))
+    : [];
+}
+
+export async function getActiveRetailers() {
+  const res = await fetch("http://localhost:8080/api/customers");
+  if (!res.ok) {
+    throw new Error(`Customers request failed: ${res.status}`);
+  }
+
+  const data = await res.json();
+  if (!Array.isArray(data)) return [];
+
+  // If active/type fields exist, prefer active retailers; otherwise fall back to all.
+  const normalized = data.map((c) => ({
+    id: c?.id,
+    name: String(c?.name ?? ""),
+    isActive: c?.active ?? c?.isActive ?? true,
+    kind: String(c?.type ?? c?.customerType ?? c?.category ?? "retailer").toLowerCase(),
+  }));
+
+  const activeRetailers = normalized.filter((c) => c.isActive && c.kind.includes("retail"));
+  return (activeRetailers.length ? activeRetailers : normalized.filter((c) => c.isActive))
+    .filter((c) => c.name.trim().length > 0);
+}
+
+export async function getAllCustomers() {
+  const res = await fetch("http://localhost:8080/api/customers");
+  if (!res.ok) {
+    throw new Error(`Customers request failed: ${res.status}`);
+  }
+
+  const data = await res.json();
+  return Array.isArray(data)
+    ? data.map((c) => ({
+        id: c?.id ?? null,
+        name: String(c?.name ?? ""),
+        ownerName: String(c?.ownerName ?? c?.owner_name ?? ""),
+        address: String(c?.address ?? ""),
+      }))
+    : [];
+}
+
+export async function getMedicinesForSearch(query = "") {
+  const encoded = encodeURIComponent(query);
+  const res = await fetch(`http://localhost:8080/api/medicines/forSearch?query=${encoded}`);
+  if (!res.ok) {
+    throw new Error(`Medicines request failed: ${res.status}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 }

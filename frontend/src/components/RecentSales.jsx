@@ -57,7 +57,7 @@ export default function RecentSales({ sales = [] }) {
                 <div className="text-sm text-gray-500">{s.sub}</div>
               </div>
             </div>
-            <div className="font-semibold ml-2 text-gray-800">₹{s.amount.toLocaleString()}</div>
+            <div className="font-semibold ml-2 text-gray-800">₹{Number(s?.amount ?? 0).toLocaleString()}</div>
           </li>
         ))}
         {!loading && !error && visibleSales.length === 0 && (

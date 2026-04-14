@@ -19,6 +19,7 @@ useEffect(() => {
       const uiList = (Array.isArray(data) ? data : []).map(c => ({
         id: c.id,
         name: c.name,
+        ownerName: c.ownerName || c.owner_name || '',
         phone: c.phoneNumber || '',     // <-- backend -> frontend mapping
         email: c.email || '',
         address: c.address || '',
@@ -40,7 +41,7 @@ useEffect(() => {
 const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState(initialCustomers);
   const [editingCustomer, setEditingCustomer] = useState(null);
-  const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '', gstin: '', loyaltyPoints: 0 });
+  const [formData, setFormData] = useState({ name: '', ownerName: '', phone: '', email: '', address: '', gstin: '', loyaltyPoints: 0 });
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
 
@@ -59,6 +60,7 @@ const [loading, setLoading] = useState(true);
       setFormData({
         id: customer.id,
         name: customer.name,
+        ownerName: customer.ownerName || '',
         phone: customer.phone,
         email: customer.email,
         address: customer.address,
@@ -70,7 +72,7 @@ const [loading, setLoading] = useState(true);
 
   const closeEditModal = () => {
     setEditingCustomer(null);
-    setFormData({ name: '', phone: '', email: '', address: '', gstin: '', loyaltyPoints: 0 });
+    setFormData({ name: '', ownerName: '', phone: '', email: '', address: '', gstin: '', loyaltyPoints: 0 });
   };
 
   const handleChange = (e) => {
@@ -83,6 +85,7 @@ const saveCustomer = async () => {
     const payload = {
       id: formData.id ?? null,
       name: formData.name,
+      ownerName: formData.ownerName,
       phoneNumber: formData.phone,    // <-- frontend -> backend mapping
       email: formData.email,
       address: formData.address,
@@ -102,6 +105,7 @@ const saveCustomer = async () => {
     const mapped = {
       id: saved.id,
       name: saved.name,
+      ownerName: saved.ownerName || saved.owner_name || '',
       phone: saved.phoneNumber || '',
       email: saved.email || '',
       address: saved.address || '',
@@ -163,8 +167,8 @@ const saveCustomer = async () => {
             boxShadow: '0 2px 8px rgba(16, 185, 129, 0.28)',
           }}
           onClick={() => {
-            setEditingCustomer({id: null,name: "",phone: "",email: "",address: "",gstin: "",loyaltyPoints: 0});
-            setFormData({id: null,name: "",phone: "",email: "",address: "",gstin: "",loyaltyPoints: 0});
+            setEditingCustomer({id: null,name: "",ownerName: "",phone: "",email: "",address: "",gstin: "",loyaltyPoints: 0});
+            setFormData({id: null,name: "",ownerName: "",phone: "",email: "",address: "",gstin: "",loyaltyPoints: 0});
           }}
         >
           + Add New Customer
@@ -326,6 +330,10 @@ const saveCustomer = async () => {
               <label style={{ fontWeight: 600, color: '#374151' }}>
                 Name
                 <input name="name" value={formData.name} onChange={handleChange} style={{ marginTop: 6, padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 14, outline: 'none', width: '100%' }} />
+              </label>
+              <label style={{ fontWeight: 600, color: '#374151' }}>
+                Owner Name
+                <input name="ownerName" value={formData.ownerName} onChange={handleChange} style={{ marginTop: 6, padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 14, outline: 'none', width: '100%' }} />
               </label>
               <label style={{ fontWeight: 600, color: '#374151' }}>
                 Phone

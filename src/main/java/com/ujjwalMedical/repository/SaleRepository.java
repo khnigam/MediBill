@@ -19,5 +19,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     Double sumTotalAmountBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     List<Sale> findTop10ByOrderBySaleDateDescIdDesc();
+
+    List<Sale> findAllByOrderBySaleDateDescIdDesc();
 }
 
