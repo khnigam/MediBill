@@ -21,6 +21,7 @@ const menuItems = [
   { label: "Sales", icon: <MdAttachMoney size={20} />, key: "sales",path: "/sales" },
   { label: "Add Sale", icon: <MdAttachMoney size={20} />, key: "add_sale",path: "/sale" },
   { label: "Reports", icon: <MdBarChart size={20} />, key: "reports",path: "/purchase" },
+  { label: "Program config", icon: <MdSettings size={20} />, key: "program_config", path: "/program-config" },
 ];
 
 export default function Sidebar() {

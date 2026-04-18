@@ -9,6 +9,7 @@ import Suppliers from "./pages/Suppliers";
 import Customers from "./pages/Customers";
 import Purchases from "./pages/Recent Purchases";
 import Sales from "./pages/Recent Sales";
+import ProgramFormPage from "./config-form/ProgramFormPage";
 
 
 export default function App() {
@@ -31,6 +32,13 @@ export default function App() {
                 <Route path="/customers" element={<Customers/>}/>
                 <Route path="/purchases" element={<Purchases/>}/>
                 <Route path="/sales" element={<Sales/>}/>
+                <Route path="/program-config" element={
+                    <div className="min-h-screen bg-gray-50 pt-16">
+                        <main className="ml-64 p-4">
+                            <ProgramFormPage/>
+                        </main>
+                    </div>
+                }/>
 
 
             </Routes>
