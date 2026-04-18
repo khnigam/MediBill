@@ -1,6 +1,6 @@
-import {BrowserRouter as Router, Routes, Route} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import AppLayout from "./components/AppLayout";
 import Dashboard from "./pages/Dashboard";
-import Header from "./components/Header";
 import Purchase from "./pages/Purchase";
 import PurchaseView from "./pages/PurchaseView";
 import Sale from "./pages/Sale";
@@ -11,37 +11,23 @@ import Purchases from "./pages/Recent Purchases";
 import Sales from "./pages/Recent Sales";
 import ProgramFormPage from "./config-form/ProgramFormPage";
 
-
 export default function App() {
-    return (
-        <Router>
-            <Header/>
-            <Routes>
-                <Route path="/" element={
-                    <div className="min-h-screen bg-gray-50 pt-16">
-                        <main className="ml-64 p-4">
-                            <Dashboard/>
-                        </main>
-                    </div>
-                }/>
-                <Route path="/purchase" element={<Purchase/>}/>
-                <Route path="/purchase/view/:id" element={<PurchaseView/>}/>
-                <Route path="/sale" element={<Sale/>}/>
-                <Route path="/medicines" element={<Medicines/>}/>
-                <Route path="/suppliers" element={<Suppliers/>}/>
-                <Route path="/customers" element={<Customers/>}/>
-                <Route path="/purchases" element={<Purchases/>}/>
-                <Route path="/sales" element={<Sales/>}/>
-                <Route path="/program-config" element={
-                    <div className="min-h-screen bg-gray-50 pt-16">
-                        <main className="ml-64 p-4">
-                            <ProgramFormPage/>
-                        </main>
-                    </div>
-                }/>
-
-
-            </Routes>
-        </Router>
-    );
+  return (
+    <Router>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/purchase" element={<Purchase />} />
+          <Route path="/purchase/view/:id" element={<PurchaseView />} />
+          <Route path="/sale" element={<Sale />} />
+          <Route path="/medicines" element={<Medicines />} />
+          <Route path="/suppliers" element={<Suppliers />} />
+          <Route path="/customers" element={<Customers />} />
+          <Route path="/purchases" element={<Purchases />} />
+          <Route path="/sales" element={<Sales />} />
+          <Route path="/program-config" element={<ProgramFormPage />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
 }

@@ -2,7 +2,7 @@
   "blocks": [
     {
       "block_id": "basic_information",
-      "title": "Basic Information",
+      "title": "Basic Information Nigam",
       "description": "Program name, category and display image",
       "layout": { "columns": 2 },
       "fields": [

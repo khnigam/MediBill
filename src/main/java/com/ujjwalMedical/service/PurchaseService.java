@@ -8,9 +8,12 @@ import com.ujjwalMedical.repository.MedicineRepository;
 import com.ujjwalMedical.repository.PurchaseRepository;
 import com.ujjwalMedical.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,19 +33,77 @@ public class PurchaseService {
         return medicineRepo.save(m);
     }
 
-    private LocalDate parseExpiry(String d) {
-        if (d == null || d.length() != 8) return null;
-        int day = Integer.parseInt(d.substring(0, 2));
-        int month = Integer.parseInt(d.substring(2, 4));
-        int year = Integer.parseInt(d.substring(4, 8));
-        return LocalDate.of(year, month, day);
+    /**
+     * Accepts common bill / CSV / UI shapes so expiry is not dropped silently.
+     * Order: ISO {@code yyyy-MM-dd}, 8-digit {@code DDMMYYYY}, then {@code dd/MM/yyyy} or {@code dd-MM-yyyy}.
+     */
+    private LocalDate parseExpiry(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String d = raw.trim();
+        if (d.isEmpty()) {
+            return null;
+        }
+
+        // yyyy-MM-dd (CSV exports, HTML date, APIs)
+        if (d.length() >= 10 && d.charAt(4) == '-') {
+            try {
+                return LocalDate.parse(d.substring(0, 10));
+            } catch (DateTimeParseException ignored) {
+                // fall through
+            }
+        }
+
+        // DDMMYYYY — matches purchase form placeholder
+        if (d.length() == 8 && d.chars().allMatch(Character::isDigit)) {
+            try {
+                int day = Integer.parseInt(d.substring(0, 2));
+                int month = Integer.parseInt(d.substring(2, 4));
+                int year = Integer.parseInt(d.substring(4, 8));
+                return LocalDate.of(year, month, day);
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+
+        // dd/MM/yyyy or dd-MM-yyyy (invoice printouts)
+        char sep = d.indexOf('/') >= 0 ? '/' : (d.indexOf('-') >= 0 ? '-' : '\0');
+        if (sep != '\0') {
+            String[] parts = d.split("[/-]");
+            if (parts.length == 3) {
+                try {
+                    if (parts[0].length() == 4) {
+                        return LocalDate.of(
+                                Integer.parseInt(parts[0]),
+                                Integer.parseInt(parts[1]),
+                                Integer.parseInt(parts[2]));
+                    }
+                    int day = Integer.parseInt(parts[0]);
+                    int month = Integer.parseInt(parts[1]);
+                    int year = Integer.parseInt(parts[2]);
+                    return LocalDate.of(year, month, day);
+                } catch (Exception ignored) {
+                    return null;
+                }
+            }
+        }
+
+        return null;
     }
 
 
     public Purchase createPurchase(PurchaseRequest req) {
+        if (req.getDistributor_id() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "distributor_id is required: choose a supplier from the list before saving.");
+        }
 
         Supplier supplier = supplierRepo.findById(req.getDistributor_id())
-                .orElseThrow(() -> new RuntimeException("Supplier not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Supplier not found for id: " + req.getDistributor_id()));
 
         Purchase purchase = new Purchase();
         purchase.setInvoiceNo(req.getInvoice_number());
@@ -108,6 +169,7 @@ public class PurchaseService {
             item.setExpiry(parseExpiry(itemReq.getExpiry()));
             Integer updatedQuantity = (batch.getQuantity() != null ? batch.getQuantity() : 0) + itemReq.getQty() ;
             batch.setQuantity(updatedQuantity);
+            BatchActivePolicy.syncActiveFromQuantity(batch);
             batch.setExpiryDate(parseExpiry(itemReq.getExpiry()));
             batch.setPurchaseRate(netRate);
             batch.setMrp(itemReq.getMrp());

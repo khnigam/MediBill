@@ -85,8 +85,7 @@ export default function RecentPurchases() {
   };
 
   return (
-
-    <div className="mt-20 mx-auto p-6 bg-gray-50 rounded-md shadow-md" style={{width: '92vw'}} >
+    <div className="mx-auto w-full max-w-7xl rounded-md bg-gray-50 p-6 shadow-md">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Recent Purchases</h1>

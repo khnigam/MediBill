@@ -130,17 +130,10 @@ const saveCustomer = async () => {
 
 
   return (
-    <div className="mt-24 ml-16"
-    style={{
-      width: '92vw',
-      backgroundColor: '#f9fafb',
-      borderRadius: 12,
-      padding: 40,
-      minHeight: 'calc(100vh - 64px)',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      color: '#111827',
-    }}>
+    <div
+      className="mx-auto w-full max-w-7xl rounded-xl bg-gray-50 p-6 text-gray-900 shadow-sm md:p-10"
+      style={{ fontFamily: "Inter, system-ui, sans-serif" }}
+    >
 
       <div style={{
         display: 'flex',

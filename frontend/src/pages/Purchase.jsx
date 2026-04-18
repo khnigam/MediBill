@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getPurchaseDetails, updatePurchase } from "../api";
+import BillCsvImportPanel from "../components/BillCsvImportPanel";
 
 /**
  * EnterPurchasePage.jsx
@@ -117,6 +118,26 @@ function SupplierDropdown({
       )}
     </div>
   );
+}
+
+/** Normalize line expiry for the API: ISO kept; compact DDMMYYYY → yyyy-MM-dd; dd/mm/yyyy → ISO. */
+function expiryForApi(raw) {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  if (/^\d{8}$/.test(s)) {
+    const dd = s.slice(0, 2);
+    const mm = s.slice(2, 4);
+    const yyyy = s.slice(4, 8);
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  const m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (m) {
+    const dd = m[1].padStart(2, "0");
+    const mm = m[2].padStart(2, "0");
+    return `${m[3]}-${mm}-${dd}`;
+  }
+  return s;
 }
 
 export default function EnterPurchasePage() {
@@ -566,14 +587,16 @@ export default function EnterPurchasePage() {
           net_unit_price: Number(vals.netUnitInclTax) || 0, // after tax
           actual_price: row.actualPrice != null ? Number(row.actualPrice) : null,
           tax: Number(row.tax) || 0,
-          expiry: row.expiry || ""
+          expiry: expiryForApi(row.expiry),
         };
       });
 
+    const distributorId =
+      supplierId !== "" && supplierId != null ? Number(supplierId) : null;
     const payload = {
       purchase_date: date,
       invoice_number: invoiceNumber,
-      distributor_id: supplierId || null,
+      distributor_id: Number.isFinite(distributorId) ? distributorId : null,
       purchase_type: purchaseType,
       payment_type: paymentType,
       rate_type: rateType,
@@ -586,6 +609,15 @@ export default function EnterPurchasePage() {
 
   const savePurchase = async () => {
     if (isViewMode) return;
+    const distributorId =
+      supplierId !== "" && supplierId != null ? Number(supplierId) : null;
+    if (distributorId == null || Number.isNaN(distributorId)) {
+      window.alert(
+        "Please select a distributor/supplier: type to search, then click a name in the list before saving."
+      );
+      return;
+    }
+
     const payload = buildPayload();
     console.log("Saving purchase payload:", payload);
 
@@ -616,7 +648,7 @@ export default function EnterPurchasePage() {
                 netUnitPrice: Number(vals.netUnitInclTax) || 0,
                 taxPercent: Number(row.tax) || 0,
                 mrp: row.mrp || "",
-                expiry: row.expiry || "",
+                expiry: expiryForApi(row.expiry),
               };
             }),
         };
@@ -645,9 +677,8 @@ export default function EnterPurchasePage() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen p-6 font-sans text-gray-900">
-      <div className="mb-6" style={{ height: "40px" }} />
-      <main className="bg-white rounded-lg shadow p-6 max-w-7xl mx-auto">
+    <div className="font-sans text-gray-900">
+      <main className="mx-auto max-w-7xl rounded-lg bg-white p-6 shadow">
         <fieldset disabled={isViewMode} className={isViewMode ? "opacity-95" : ""}>
           {/* Invoice + Options */}
           <section className="mb-6 bg-gray-100 p-4 rounded">
@@ -742,6 +773,21 @@ export default function EnterPurchasePage() {
               </div>
             </div>
           </section>
+
+          {!isViewMode && (
+            <BillCsvImportPanel
+              medicineList={medicineList}
+              disabled={isViewMode}
+              emptyRowTemplate={emptyRowTemplate}
+              onApply={(built) => {
+                setRows([...built, { ...emptyRowTemplate }]);
+                setMedSearchResults({});
+                setMedActive({});
+                setBatchResults({});
+                setBatchActive({});
+              }}
+            />
+          )}
 
           {/* Table */}
           <section>
@@ -853,7 +899,7 @@ export default function EnterPurchasePage() {
                         <input
                           id={`cell-${i}-expiry`}
                           type="text"
-                          placeholder="DDMMYYYY"
+                          placeholder="DDMMYYYY or yyyy-mm-dd"
                           value={row.expiry}
                           onChange={(e) => {
                             const v = e.target.value.replace(/[^0-9/-]/g, "");

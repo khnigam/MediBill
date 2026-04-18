@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
 import { BlockCard } from "./BlockCard";
 import { fetchProgramFormSchema } from "./schemaApi";
 import type { SchemaDoc } from "./types";
@@ -28,10 +27,7 @@ export default function ProgramFormPage() {
   }, [reset]);
 
   return (
-    <div className="flex min-h-full w-full">
-      <Sidebar />
-      <div className="min-w-0 flex-1">
-        <div className="max-w-5xl">
+    <div className="min-w-0 w-full max-w-5xl">
         <header className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Program configuration</h1>
           <p className="mt-2 max-w-2xl text-sm text-gray-600">
@@ -75,8 +71,6 @@ export default function ProgramFormPage() {
             </pre>
           </details>
         )}
-        </div>
-      </div>
     </div>
   );
 }

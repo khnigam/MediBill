@@ -11,9 +11,14 @@ import com.ujjwalMedical.repository.MedicineRepository;
 import com.ujjwalMedical.repository.PurchaseItemRepository;
 import com.ujjwalMedical.repository.PurchaseRepository;
 import com.ujjwalMedical.repository.SupplierRepository;
+import com.ujjwalMedical.service.BatchActivePolicy;
+import com.ujjwalMedical.service.PurchaseBillAiService;
 import com.ujjwalMedical.service.PurchaseService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
@@ -33,16 +38,51 @@ public class PurchaseController {
     private final MedicineRepository medicineRepo;
     private final BatchRepository batchRepo;
     private final SupplierRepository supplierRepo;
+    private final PurchaseBillAiService purchaseBillAiService;
     @PersistenceContext
     private EntityManager entityManager;
 
-    public PurchaseController(PurchaseService purchaseService, PurchaseRepository purchaseRepo, PurchaseItemRepository purchaseItemRepo, MedicineRepository medicineRepo, BatchRepository batchRepo, SupplierRepository supplierRepo) {
+    public PurchaseController(
+            PurchaseService purchaseService,
+            PurchaseRepository purchaseRepo,
+            PurchaseItemRepository purchaseItemRepo,
+            MedicineRepository medicineRepo,
+            BatchRepository batchRepo,
+            SupplierRepository supplierRepo,
+            PurchaseBillAiService purchaseBillAiService
+    ) {
         this.purchaseService = purchaseService;
         this.purchaseRepo = purchaseRepo;
         this.purchaseItemRepo = purchaseItemRepo;
         this.medicineRepo = medicineRepo;
         this.batchRepo = batchRepo;
         this.supplierRepo = supplierRepo;
+        this.purchaseBillAiService = purchaseBillAiService;
+    }
+
+    /**
+     * Invoice PDF/photo → line items for bill import. Multipart field name must be {@code file}.
+     * Lives under {@code /api/purchases} so it is registered with the same controller as other purchase APIs.
+     */
+    @PostMapping("/bill-ai-extract")
+    public Map<String, Object> billAiExtract(@RequestPart("file") MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing or empty file.");
+        }
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (java.io.IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not read uploaded file.");
+        }
+        List<Map<String, Object>> lines = purchaseBillAiService.extractLineItems(
+                bytes,
+                file.getOriginalFilename(),
+                file.getContentType()
+        );
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("lines", lines);
+        return body;
     }
 
     @PostMapping
@@ -121,6 +161,7 @@ public class PurchaseController {
                 int oldQty = old.getQuantity() != null ? old.getQuantity() : 0;
                 int currentQty = oldBatch.getQuantity() != null ? oldBatch.getQuantity() : 0;
                 oldBatch.setQuantity(Math.max(currentQty - oldQty, 0));
+                BatchActivePolicy.syncActiveFromQuantity(oldBatch);
                 batchRepo.save(oldBatch);
             }
         }
@@ -162,6 +203,7 @@ public class PurchaseController {
                         });
                 int currentBatchQty = batch.getQuantity() != null ? batch.getQuantity() : 0;
                 batch.setQuantity(currentBatchQty + item.getQuantity());
+                BatchActivePolicy.syncActiveFromQuantity(batch);
                 batch.setMrp(asDouble(row.get("mrp"), batch.getMrp() == null ? 0 : batch.getMrp()));
                 LocalDate expiry = parseExpiry(row.get("expiry"));
                 if (expiry != null) {
@@ -196,6 +238,7 @@ public class PurchaseController {
                 int itemQty = item.getQuantity() != null ? item.getQuantity() : 0;
                 int currentQty = batch.getQuantity() != null ? batch.getQuantity() : 0;
                 batch.setQuantity(Math.max(currentQty - itemQty, 0));
+                BatchActivePolicy.syncActiveFromQuantity(batch);
                 batchRepo.save(batch);
             }
         }

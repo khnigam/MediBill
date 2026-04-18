@@ -1,24 +1,15 @@
-import React, { useState } from "react";
-import Sidebar from "../components/Sidebar";
+import React from "react";
 import StatCard from "../components/StatCard";
 import LowStockTable from "../components/LowStockTable";
 import RecentSales from "../components/RecentSales";
 import useDashboardData from "../hooks/useDashboardData";
 
 export default function Dashboard() {
-  const { loading, summary, lowStock, recentSales } = useDashboardData();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  const toggleSidebar = () => setSidebarOpen((open) => !open);
-  const closeSidebar = () => setSidebarOpen(false);
+  const { summary, lowStock, recentSales } = useDashboardData();
 
   return (
-    <div className="min-h-screen flex">
-      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex-1 flex flex-col min-h-screen">
-
-        <main className={`p-3 max-w-7xl mx-auto transition-all duration-300 ${sidebarOpen ? "ml-0" : "ml-0"}`}>
-          <h1 className="text-3xl font-semibold text-gray-900 mb-6">Dashboard</h1>
+    <div className="max-w-7xl mx-auto w-full">
+      <h1 className="text-3xl font-semibold text-gray-900 mb-6">Dashboard</h1>
 
           {!summary ? (
             <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
@@ -59,8 +50,6 @@ export default function Dashboard() {
               </div>
             </>
           )}
-        </main>
-      </div>
     </div>
   );
 }

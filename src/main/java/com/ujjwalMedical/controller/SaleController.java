@@ -10,6 +10,7 @@ import com.ujjwalMedical.repository.CustomerRepository;
 import com.ujjwalMedical.repository.MedicineRepository;
 import com.ujjwalMedical.repository.SaleItemRepository;
 import com.ujjwalMedical.repository.SaleRepository;
+import com.ujjwalMedical.service.BatchActivePolicy;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -122,6 +123,7 @@ public class SaleController {
             int oldQty = old.getQuantity() != null ? old.getQuantity() : 0;
             int currentQty = oldBatch.getQuantity() != null ? oldBatch.getQuantity() : 0;
             oldBatch.setQuantity(currentQty + oldQty);
+            BatchActivePolicy.syncActiveFromQuantity(oldBatch);
             batchRepository.save(oldBatch);
         }
         saleItemRepository.deleteBySaleId(id);
@@ -163,6 +165,7 @@ public class SaleController {
             int itemQty = item.getQuantity() != null ? item.getQuantity() : 0;
             int currentQty = batch.getQuantity() != null ? batch.getQuantity() : 0;
             batch.setQuantity(currentQty + itemQty);
+            BatchActivePolicy.syncActiveFromQuantity(batch);
             batchRepository.save(batch);
         }
         saleRepository.delete(sale);
@@ -227,6 +230,7 @@ public class SaleController {
 
                     int currentQty = batch.getQuantity() == null ? 0 : batch.getQuantity();
                     batch.setQuantity(currentQty - requestedQty);
+                    BatchActivePolicy.syncActiveFromQuantity(batch);
                     batchRepository.save(batch);
 
                     LinePricing pricing = computeLinePricing(unitPrice, requestedQty, discountPercent, taxPercent, discountMode);
@@ -311,6 +315,7 @@ public class SaleController {
 
             int taken = Math.min(remaining, available);
             batch.setQuantity(available - taken);
+            BatchActivePolicy.syncActiveFromQuantity(batch);
             batchRepository.save(batch);
 
             LinePricing pricing = computeLinePricing(unitPrice, taken, discountPercent, taxPercent, discountMode);
@@ -336,6 +341,7 @@ public class SaleController {
         if (remaining > 0) {
             int currentQty = latestBatch.getQuantity() == null ? 0 : latestBatch.getQuantity();
             latestBatch.setQuantity(currentQty - remaining);
+            BatchActivePolicy.syncActiveFromQuantity(latestBatch);
             batchRepository.save(latestBatch);
 
             LinePricing pricing = computeLinePricing(unitPrice, remaining, discountPercent, taxPercent, discountMode);

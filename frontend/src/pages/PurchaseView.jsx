@@ -38,19 +38,19 @@ export default function PurchaseView() {
   }, [details]);
 
   if (loading) {
-    return <div className="mt-20 mx-auto p-6 w-[92vw] text-gray-500">Loading purchase...</div>;
+    return <div className="mx-auto w-full max-w-7xl p-6 text-gray-500">Loading purchase...</div>;
   }
 
   if (!details) {
     return (
-      <div className="mt-20 mx-auto p-6 w-[92vw]">
-        <div className="bg-white rounded shadow p-6 text-gray-600">Purchase not found.</div>
+      <div className="mx-auto w-full max-w-7xl p-6">
+        <div className="rounded bg-white p-6 text-gray-600 shadow">Purchase not found.</div>
       </div>
     );
   }
 
   return (
-    <div className="mt-20 mx-auto p-6 bg-gray-50 rounded-md shadow-md" style={{ width: "92vw" }}>
+    <div className="mx-auto w-full max-w-7xl rounded-md bg-gray-50 p-6 shadow-md">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Purchase Details</h1>
         <div className="space-x-2">

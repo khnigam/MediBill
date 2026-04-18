@@ -6,6 +6,8 @@ import com.ujjwalMedical.repository.BatchRepository;
 import com.ujjwalMedical.service.MedicineService;
 
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -26,7 +28,9 @@ public class MedicineBatchController {
 
         List<Batch> batches = batchRepository.findByMedicineId(medicineId);
 
+        // Newest batches first (identity PK order matches typical insert order).
         return batches.stream()
+                .sorted(Comparator.comparing(Batch::getId, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(b -> new BatchDTO(
                         b.getId(),
                         b.getBatchNo(),

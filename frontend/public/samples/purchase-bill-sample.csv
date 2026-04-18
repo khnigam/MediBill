@@ -1,0 +1,5 @@
+medicine_name,batch,qty,unit_price,mrp,tax_percent,expiry
+"Paracetamol 500mg",P500-A01,120,9.50,12.00,5,2026-06-30
+Amoxicillin 250mg Capsule,AMX-99A,60,22.00,28.00,5,2025-12-15
+Vitamin D3 60k IU,VITD-60K-01,24,8.75,11.00,5,2026-03-01
+Ibuprofen 200mg Tablet,IBU200-B12,200,0.10,0.15,5,2026-01-20

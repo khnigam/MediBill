@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 const initialInventory = [
   {
@@ -56,6 +56,13 @@ function MedicineInventory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [batchModal, setBatchModal] = useState(null);
   const [batchList, setBatchList] = useState([]);
+  const [historyEntries, setHistoryEntries] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+  const [historyBatchNo, setHistoryBatchNo] = useState("");
+  const [historyBatchId, setHistoryBatchId] = useState(null);
+  /** Default: hide disabled batches; radio switches to include them. */
+  const [showDisabledBatches, setShowDisabledBatches] = useState(false);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -85,6 +92,7 @@ function MedicineInventory() {
 
   const openBatchModal = async (medicine) => {
     setBatchModal(medicine);
+    setShowDisabledBatches(false);
 
     try {
       const response = await fetch(`http://localhost:8080/api/medicines/${medicine.id}/batches`);
@@ -150,6 +158,57 @@ function MedicineInventory() {
   const closeBatchModal = () => {
     setBatchModal(null);
     setBatchList([]);
+    setHistoryEntries([]);
+    setHistoryLoading(false);
+    setHistoryError("");
+    setHistoryBatchNo("");
+    setHistoryBatchId(null);
+    setShowDisabledBatches(false);
+  };
+
+  const visibleBatches = useMemo(() => {
+    let list = [...(batchList ?? [])];
+    list.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+    if (!showDisabledBatches) {
+      list = list.filter((b) => b.active !== false);
+    }
+    return list;
+  }, [batchList, showDisabledBatches]);
+
+  useEffect(() => {
+    if (!showDisabledBatches && historyBatchId != null && (batchList ?? []).length > 0) {
+      const row = batchList.find((b) => b.id === historyBatchId);
+      if (row && row.active === false) {
+        setHistoryBatchId(null);
+        setHistoryBatchNo("");
+        setHistoryEntries([]);
+        setHistoryError("");
+        setHistoryLoading(false);
+      }
+    }
+  }, [showDisabledBatches, historyBatchId, batchList]);
+
+  const loadBatchHistory = async (b) => {
+    if (!b?.id) return;
+    setHistoryBatchId(b.id);
+    setHistoryBatchNo(b.batchNo ?? "");
+    setHistoryLoading(true);
+    setHistoryError("");
+    setHistoryEntries([]);
+    try {
+      const res = await fetch(`http://localhost:8080/api/batches/${b.id}/history`);
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      setHistoryEntries(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Batch history failed", err);
+      setHistoryError(err?.message || "Failed to load batch history");
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -184,11 +243,8 @@ function MedicineInventory() {
   );
 
   return (
-    <div className="container mx-auto p-6 font-sans">
-
-      {/* header + stats kept same */}
-
-      <div className="mb-4 flex justify-between items-center">
+    <div className="w-full font-sans">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <input
           type="search"
           placeholder="Search by medicine or brand..."
@@ -264,35 +320,84 @@ function MedicineInventory() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white p-6 rounded-lg shadow-xl w-[600px]"
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl"
           >
-            <h2 className="text-xl font-bold mb-4">
+            <h2 className="text-xl font-bold mb-1">
               Batch Details – {batchModal.medicineName}
             </h2>
+            <p className="mb-3 text-xs text-gray-500">
+              Click a batch row to load stock movement history (purchases +, sales −). Newest batches
+              are listed first.
+            </p>
 
-            <table className="w-full border-collapse bg-white shadow rounded">
+            <div
+              className="mb-4 flex flex-wrap items-center gap-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm"
+              role="radiogroup"
+              aria-label="Which batches to list"
+            >
+              <label className="inline-flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="batch-visibility"
+                  checked={!showDisabledBatches}
+                  onChange={() => setShowDisabledBatches(false)}
+                />
+                <span>Active batches only</span>
+              </label>
+              <label className="inline-flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="batch-visibility"
+                  checked={showDisabledBatches}
+                  onChange={() => setShowDisabledBatches(true)}
+                />
+                <span>Show disabled batches</span>
+              </label>
+            </div>
+
+            <table className="w-full border-collapse rounded bg-white shadow">
               <thead>
-                <tr className="border-b">
-                  <th className="p-2 text-left">Batch No</th>
-                  <th className="p-2 text-left">Expiry</th>
-                  <th className="p-2 text-left">MRP</th>
-                  <th className="p-2 text-left">Purchase Rate</th>
-                  <th className="p-2 text-left">Qty</th>
-                  <th className="p-2 text-right">Action</th>
+                <tr className="border-b bg-gray-50">
+                  <th className="p-2 text-left text-xs font-semibold uppercase text-gray-600">Batch No</th>
+                  <th className="p-2 text-left text-xs font-semibold uppercase text-gray-600">Expiry</th>
+                  <th className="p-2 text-left text-xs font-semibold uppercase text-gray-600">MRP</th>
+                  <th className="p-2 text-left text-xs font-semibold uppercase text-gray-600">Purchase Rate</th>
+                  <th className="p-2 text-left text-xs font-semibold uppercase text-gray-600">Qty</th>
+                  <th className="p-2 text-right text-xs font-semibold uppercase text-gray-600">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {(batchList ?? []).map((b = {}, idx) => (
-                  <tr key={idx} className="border-b">
-                    <td className="p-2">{b.batchNo ?? ""}</td>
+                {visibleBatches.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-4 text-center text-sm text-gray-500">
+                      {showDisabledBatches
+                        ? "No batches for this medicine."
+                        : 'No active batches. Choose "Show disabled batches" above to see disabled rows.'}
+                    </td>
+                  </tr>
+                )}
+                {visibleBatches.map((b = {}, idx) => (
+                  <tr
+                    key={b.id ?? idx}
+                    className={
+                      "cursor-pointer border-b transition " +
+                      (historyBatchId != null && b.id === historyBatchId
+                        ? "bg-indigo-50"
+                        : "hover:bg-gray-50")
+                    }
+                    onClick={() => loadBatchHistory(b)}
+                  >
+                    <td className="p-2 font-medium">{b.batchNo ?? ""}</td>
                     <td className="p-2">{b.expiryDate ?? ""}</td>
                     <td className="p-2">₹{typeof b.mrp === "number" ? b.mrp.toFixed(2) : "0.00"}</td>
                     <td className="p-2">₹{typeof b.purchaseRate === "number" ? b.purchaseRate.toFixed(2) : "0.00"}</td>
                     <td className="p-2">{typeof b.quantity === "number" ? b.quantity : 0}</td>
                     <td className="p-2 text-right">
                       <button
+                        type="button"
                         className={`text-sm ${b.active === false ? "text-gray-400" : "text-red-600 hover:underline"}`}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (b.active === false) return;
                           deleteBatch(b.id);
                         }}
@@ -303,8 +408,79 @@ function MedicineInventory() {
                   </tr>
                 ))}
               </tbody>
-         
             </table>
+
+            {(historyBatchNo || historyLoading || historyError || historyEntries.length > 0) && (
+              <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+                <h3 className="mb-2 text-sm font-bold text-gray-800">
+                  Movement history
+                  {historyBatchNo ? (
+                    <span className="ml-2 font-mono text-indigo-700">{historyBatchNo}</span>
+                  ) : null}
+                </h3>
+                {historyLoading && <p className="text-sm text-gray-500">Loading…</p>}
+                {historyError && (
+                  <p className="text-sm text-red-600">{historyError}</p>
+                )}
+                {!historyLoading && !historyError && historyEntries.length === 0 && historyBatchNo && (
+                  <p className="text-sm text-gray-500">No purchase or sale lines linked to this batch yet.</p>
+                )}
+                {!historyLoading && !historyError && historyEntries.length > 0 && (
+                  <div className="max-h-56 overflow-auto rounded border border-gray-200 bg-white">
+                    <table className="w-full border-collapse text-sm">
+                      <thead className="sticky top-0 bg-gray-100 text-left text-xs uppercase text-gray-600">
+                        <tr>
+                          <th className="p-2">Date</th>
+                          <th className="p-2">Type</th>
+                          <th className="p-2">Reference</th>
+                          <th className="p-2">Party</th>
+                          <th className="p-2 text-right">Δ Qty</th>
+                          <th className="p-2 text-right">Balance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {historyEntries.map((row, i) => {
+                          const d = Number(row.quantityDelta);
+                          const pos = d > 0;
+                          return (
+                            <tr key={`${row.kind}-${row.lineId}-${i}`} className="border-t border-gray-100">
+                              <td className="p-2 whitespace-nowrap">{row.date}</td>
+                              <td className="p-2">
+                                <span
+                                  className={
+                                    "rounded px-2 py-0.5 text-xs font-semibold " +
+                                    (row.kind === "PURCHASE"
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-orange-100 text-orange-800")
+                                  }
+                                >
+                                  {row.kind === "PURCHASE" ? "IN (+)" : "OUT (−)"}
+                                </span>
+                              </td>
+                              <td className="p-2 font-mono text-xs">{row.reference || "—"}</td>
+                              <td className="p-2 max-w-[140px] truncate" title={row.counterparty}>
+                                {row.counterparty || "—"}
+                              </td>
+                              <td
+                                className={
+                                  "p-2 text-right font-semibold tabular-nums " +
+                                  (pos ? "text-green-700" : "text-orange-700")
+                                }
+                              >
+                                {pos ? `+${d}` : d}
+                              </td>
+                              <td className="p-2 text-right tabular-nums text-gray-800">
+                                {row.balanceAfter}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mt-4 text-right">
               <button
@@ -428,19 +604,8 @@ function EnterPurchase() {
     : "";
 
   return (
-    <div className="container mx-auto p-6 font-sans">
-      <header className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Enter Purchase</h1>
-        <nav className="space-x-4 text-blue-600">
-          <a href="#dashboard">Dashboard</a>
-          <a href="#inventory">Inventory</a>
-          <a href="#purchases" className="font-semibold">
-            Purchases
-          </a>
-          <a href="#reports">Reports</a>
-        </nav>
-        <button className="bg-blue-600 text-white px-4 py-1 rounded">Log Out</button>
-      </header>
+    <div className="w-full font-sans">
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">Enter Purchase (demo)</h1>
 
       <section className="mb-6">
         <h2 className="font-semibold mb-2">Invoice Details</h2>
@@ -638,29 +803,33 @@ export default function App() {
   const [view, setView] = useState("inventory");
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow p-4 flex justify-between items-center">
-        <div className="font-bold text-lg text-blue-700">MediDistribute</div>
-        <div className="space-x-6 text-blue-600 font-semibold">
-          <button
-            className={view === "inventory" ? "underline" : ""}
-            onClick={() => setView("inventory")}
-          >
-            Inventory
-          </button>
-          <button
-            className={view === "purchases" ? "underline" : ""}
-            onClick={() => setView("purchases")}
-          >
-            Purchases
-          </button>
-          <button>Suppliers</button>
-          <button>Reports</button>
-        </div>
-        <div>
-          <button className="rounded-full bg-gray-300 w-8 h-8">U</button>
-        </div>
-      </nav>
+    <div className="w-full">
+      <div className="mb-6 flex flex-wrap gap-2 border-b border-gray-200 pb-3">
+        <button
+          type="button"
+          className={
+            "rounded-lg px-4 py-2 text-sm font-semibold transition " +
+            (view === "inventory"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200")
+          }
+          onClick={() => setView("inventory")}
+        >
+          Inventory
+        </button>
+        <button
+          type="button"
+          className={
+            "rounded-lg px-4 py-2 text-sm font-semibold transition " +
+            (view === "purchases"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200")
+          }
+          onClick={() => setView("purchases")}
+        >
+          Enter purchase (demo)
+        </button>
+      </div>
       {view === "inventory" && <MedicineInventory />}
       {view === "purchases" && <EnterPurchase />}
     </div>

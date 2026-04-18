@@ -111,9 +111,8 @@ export default function App() {
   }, [sales]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+    <div className="w-full max-w-7xl">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-800">Sales Overview</h1>
         <div className="flex items-center gap-3">
           {/* Search Bar */}

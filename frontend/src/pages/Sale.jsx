@@ -675,28 +675,8 @@ export default function EnterSalePage() {
   }, [discountMode, hideBatchColumn, locationColumnEnabled]);
 
   return (
-    <div className="bg-gray-50 min-h-screen p-6 font-sans text-gray-900">
-      <header className="mb-6 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="bg-green-600 text-white px-3 py-1 rounded font-semibold text-sm">
-            Stitch - Sales
-          </div>
-          <nav className="space-x-4 text-gray-700 font-medium">
-            <a href="#" className="hover:text-green-600">Dashboard</a>
-            <a href="#" className="hover:text-green-600">Inventory</a>
-            <a href="#" className="underline font-bold text-green-700">Sales</a>
-            <a href="#" className="hover:text-green-600">Reports</a>
-          </nav>
-        </div>
-        <div className="flex items-center space-x-4">
-          <button className="bg-green-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-green-700 transition">
-            Log Out
-          </button>
-          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-semibold">U</div>
-        </div>
-      </header>
-
-      <main className="bg-white rounded-lg shadow p-6 max-w-7xl mx-auto">
+    <div className="font-sans text-gray-900">
+      <main className="mx-auto max-w-7xl rounded-lg bg-white p-6 shadow">
         <h1 className="text-2xl font-bold mb-4">
           {isViewMode ? "View Sale" : isEditMode ? "Edit Sale" : "Enter Sale"}
         </h1>
