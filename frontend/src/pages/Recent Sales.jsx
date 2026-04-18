@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { getSalesList } from "../api";
+import { useNavigate } from "react-router-dom";
+import { deleteSale, getSalesList } from "../api";
 
 function StatusBadge({ status }) {
   const base = "px-3 py-1 rounded-full text-sm font-medium";
@@ -12,6 +13,7 @@ function StatusBadge({ status }) {
 }
 
 export default function App() {
+  const navigate = useNavigate();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -43,6 +45,32 @@ export default function App() {
       mounted = false;
     };
   }, []);
+
+  const reloadSales = () => {
+    setLoading(true);
+    setError("");
+    getSalesList()
+      .then((rows) => setSales(Array.isArray(rows) ? rows : []))
+      .catch(() => {
+        setError("Could not load sales data");
+        setSales([]);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  const openSale = (id, mode = "view") => {
+    navigate(`/sale?saleId=${id}&mode=${mode}`);
+  };
+
+  const handleDelete = async (id, invoiceNumber) => {
+    if (!window.confirm(`Delete sale ${invoiceNumber}?`)) return;
+    try {
+      await deleteSale(id);
+      reloadSales();
+    } catch (err) {
+      alert(err?.message || "Failed to delete sale");
+    }
+  };
 
   const filterByDate = (date) => {
     if (!date) return false;
@@ -188,8 +216,9 @@ export default function App() {
                     <StatusBadge status={s.status} />
                   </td>
                   <td className="py-4 px-4 text-gray-400 flex gap-3">
-                    <button title="View">👁️</button>
-                    <button title="Edit">✏️</button>
+                    <button title="View" onClick={() => openSale(s.id, "view")}>👁️</button>
+                    <button title="Edit" onClick={() => openSale(s.id, "edit")}>✏️</button>
+                    <button title="Delete" onClick={() => handleDelete(s.id, s.invoiceNumber)}>🗑️</button>
                   </td>
                 </tr>
               ))}

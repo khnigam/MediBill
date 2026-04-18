@@ -15,6 +15,8 @@ public class Sale {
     private String invoiceNumber;
     private LocalDate saleDate;
     private Double totalAmount;
+    private String customerName;
+    private String saleType;
 
     @ManyToOne
     @JoinColumn(name = "customer_id")
@@ -54,6 +56,22 @@ public class Sale {
 
     public void setTotalAmount(Double totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+
+    public String getSaleType() {
+        return saleType;
+    }
+
+    public void setSaleType(String saleType) {
+        this.saleType = saleType;
     }
 
     public Customer getCustomer() {

@@ -1,5 +1,6 @@
 package com.ujjwalMedical.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,6 +25,7 @@ public class Customer {
     private String gstNumber;
     private String licenseNumber;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Sale> sales;
 }

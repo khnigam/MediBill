@@ -100,9 +100,46 @@ export async function getSalesList() {
         date: item?.date ? String(item.date) : "",
         customer: String(item?.customer ?? "Walk-in Customer"),
         totalAmount: Number(item?.totalAmount ?? 0),
+        saleType: String(item?.saleType ?? "sale"),
         status: String(item?.status ?? "Completed"),
       }))
     : [];
+}
+
+export async function saveSale(payload) {
+  const res = await fetch("http://localhost:8080/api/sales", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || `Save sale failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getSaleDetails(id) {
+  const res = await fetch(`http://localhost:8080/api/sales/${id}/details`);
+  if (!res.ok) throw new Error(`Sale details failed: ${res.status}`);
+  return res.json();
+}
+
+export async function updateSale(id, payload) {
+  const res = await fetch(`http://localhost:8080/api/sales/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Update sale failed: ${res.status}`);
+  return res.json();
+}
+
+export async function deleteSale(id) {
+  const res = await fetch(`http://localhost:8080/api/sales/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`Delete sale failed: ${res.status}`);
 }
 
 export async function getActiveRetailers() {
@@ -140,6 +177,8 @@ export async function getAllCustomers() {
         name: String(c?.name ?? ""),
         ownerName: String(c?.ownerName ?? c?.owner_name ?? ""),
         address: String(c?.address ?? ""),
+        licenseNumber: String(c?.licenseNumber ?? c?.license_number ?? ""),
+        gstNumber: String(c?.gstNumber ?? c?.gst_number ?? ""),
       }))
     : [];
 }

@@ -50,16 +50,33 @@ public class MedicineService {
         List<Medicine> meds = repo.searchByName(query.toLowerCase());
 
         return meds.stream().map(med -> {
-            List<Map<String, Object>> batchList = med.getBatches().stream().map(b -> {
+            List<Batch> activeBatches = med.getBatches().stream()
+                    .filter(b -> b.getActive() == null || b.getActive())
+                    .toList();
+
+            List<Map<String, Object>> batchList = activeBatches.stream().map(b -> {
                 Map<String, Object> batchMap = new HashMap<>();
                 batchMap.put("batchId", b.getId());
                 batchMap.put("batchNo", b.getBatchNo());
+                batchMap.put("quantity", b.getQuantity()); // Add quantity here
+                batchMap.put("mrp", b.getMrp());
+                batchMap.put("gst", b.getGst());
+                batchMap.put("expiryDate", b.getExpiryDate());
                 return batchMap;
             }).toList();
+
+            Double medicineGst = activeBatches.stream()
+                    .max((a, b) -> Integer.compare(
+                            a.getQuantity() == null ? 0 : a.getQuantity(),
+                            b.getQuantity() == null ? 0 : b.getQuantity()
+                    ))
+                    .map(Batch::getGst)
+                    .orElse(5.0);
 
             Map<String, Object> medMap = new HashMap<>();
             medMap.put("medicineId", med.getId());
             medMap.put("medicineName", med.getName());
+            medMap.put("gst", medicineGst);
             medMap.put("batches", batchList);
 
             return medMap;
