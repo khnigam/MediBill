@@ -15,3 +15,7 @@ public class MediBillApplication {
 		SpringApplication.run(MediBillApplication.class, args);
 	}
 }
+
+//https://codetest.advantageclub.co/appreciation_config/get_users_details?search
+//https://codetest.advantageclub.co/appreciation_config/options
+//c64aae47a5457e330eeed0363ba976f58781b7f1
