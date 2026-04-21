@@ -4,6 +4,8 @@ import { getAtPath, matchesCondition } from "./programFormLogic";
 import { RuleBuilderField } from "./RuleBuilderField";
 import { MultiSelectSearchField } from "./MultiSelectSearchField";
 import { useStaticOptions } from "./useStaticOptions";
+import { useProgramFormRemote } from "./ProgramFormRemoteContext";
+import { parseRemoteUserSearchOptions } from "./userSearchConfig";
 
 function isStringPairSwitch(field: FieldSchema): boolean {
   return (
@@ -51,6 +53,8 @@ export function FieldRenderer({
   setBlockPath: (blockId: string, path: string[], v: unknown) => void;
   columns: number;
 }) {
+  const externalDs = useProgramFormRemote();
+
   if (!matchesCondition(field.visible_if, blockValues)) {
     return null;
   }
@@ -243,12 +247,14 @@ export function FieldRenderer({
   }
 
   if (field.type === "multi_select_search") {
+    const remote = parseRemoteUserSearchOptions(field.options, externalDs);
     return wrap(
       <FieldShell label={field.label} required={field.required}>
         <MultiSelectSearchField
           placeholder={field.placeholder}
           value={value}
           onChange={set}
+          remote={remote}
         />
       </FieldShell>
     );

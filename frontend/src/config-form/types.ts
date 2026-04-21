@@ -1,5 +1,18 @@
+/** Root-level remote APIs for Advantage (or similar); see program-form-schema.json. */
+export type ExternalDatasourcesConfig = {
+  options_bundle_url?: string;
+  user_search_url_template?: string;
+  use_backend_proxy?: boolean;
+  user_results_path?: string;
+  user_id_field?: string;
+  user_display_fields?: string[];
+  /** Maps schema datasource `source` → JSON key on the options bundle response. */
+  source_key_map?: Record<string, string>;
+};
+
 export type SchemaDoc = {
   blocks: BlockSchema[];
+  external_datasources?: ExternalDatasourcesConfig;
 };
 
 export type BlockSchema = {
@@ -32,7 +45,8 @@ export type FieldSchema = {
     /** When true, field is not rendered in the grid; consumed by another control (e.g. rule_builder). */
     embedded_in_rule_builder?: boolean;
   };
-  options?: string[] | { source: string };
+  /** Select: string[] or `{ source }`. Multi-select search: optional `search_url_template` etc. in `userSearchConfig.ts`. */
+  options?: string[] | Record<string, unknown>;
   visible_if?: ConditionSpec;
   depends_on?: ConditionSpec;
   config?: Record<string, unknown>;

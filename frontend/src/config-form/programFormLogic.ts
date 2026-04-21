@@ -98,3 +98,68 @@ export function collectFieldSchemas(fields: FieldSchema[] | undefined): FieldSch
   }
   return out;
 }
+
+/**
+ * Backend expects `user_ids` as a JSON number array, while the UI stores `{ id, label }[]` for chips.
+ */
+function selectedUsersToNumericIdArray(value: unknown): number[] {
+  if (!Array.isArray(value)) return [];
+  const out: number[] = [];
+  for (const row of value) {
+    if (row && typeof row === "object" && "id" in row) {
+      const id = (row as { id: unknown }).id;
+      const n = typeof id === "number" && Number.isFinite(id) ? id : Number(String(id).trim());
+      if (Number.isFinite(n)) out.push(n);
+      continue;
+    }
+    if (typeof row === "number" && Number.isFinite(row)) {
+      out.push(row);
+      continue;
+    }
+    if (typeof row === "string" && /^\d+$/.test(row.trim())) {
+      out.push(Number(row.trim()));
+    }
+  }
+  return out;
+}
+
+function serializeFieldValue(field: FieldSchema, value: unknown): unknown {
+  if (field.type === "multi_select_search") {
+    return selectedUsersToNumericIdArray(value);
+  }
+  if (field.type === "group" && field.fields?.length) {
+    const obj =
+      value && typeof value === "object" && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : {};
+    const nested: Record<string, unknown> = {};
+    for (const sub of field.fields) {
+      nested[sub.key] = serializeFieldValue(sub, obj[sub.key]);
+    }
+    return nested;
+  }
+  return value;
+}
+
+function serializeBlockRow(fields: FieldSchema[], row: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const field of fields) {
+    out[field.key] = serializeFieldValue(field, row[field.key]);
+  }
+  return out;
+}
+
+/**
+ * One object per `block_id` (e.g. `block_rule.user_ids` as numbers) for POST /upsert-style bodies.
+ */
+export function buildProgramConfigApiPayload(
+  formState: FormState,
+  blocks: BlockSchema[]
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  for (const block of blocks) {
+    const row = formState[block.block_id] ?? {};
+    payload[block.block_id] = serializeBlockRow(block.fields ?? [], row);
+  }
+  return payload;
+}

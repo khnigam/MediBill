@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { searchUsers } from "./schemaApi";
+import { searchUsers, searchUsersRemote } from "./schemaApi";
+import type { RemoteUserSearchOptions } from "./userSearchConfig";
 
 export type SelectedUser = { id: string; label: string };
 
@@ -7,10 +8,13 @@ export function MultiSelectSearchField({
   placeholder,
   value,
   onChange,
+  remote,
 }: {
   placeholder?: string;
   value: unknown;
   onChange: (next: SelectedUser[]) => void;
+  /** When set, calls configured HTTP search instead of the local mock `/users/search`. */
+  remote?: RemoteUserSearchOptions | null;
 }) {
   const selected: SelectedUser[] = Array.isArray(value)
     ? (value as unknown[]).map((row) => {
@@ -29,7 +33,10 @@ export function MultiSelectSearchField({
   useEffect(() => {
     let cancelled = false;
     const t = window.setTimeout(() => {
-      searchUsers(q)
+      const run = remote
+        ? searchUsersRemote(q, remote)
+        : searchUsers(q);
+      run
         .then((list) => {
           if (!cancelled) setHits(list);
         })
@@ -41,7 +48,7 @@ export function MultiSelectSearchField({
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [q]);
+  }, [q, remote]);
 
   const remove = (id: string) => {
     onChange(selected.filter((s) => s.id !== id));
@@ -103,18 +110,6 @@ export function MultiSelectSearchField({
             ))}
           </ul>
         )}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {["Marketing", "Sales", "Human Resources", "Legal"].map((pill) => (
-          <button
-            key={pill}
-            type="button"
-            className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-600 hover:border-indigo-300 hover:text-indigo-700"
-            onClick={() => add({ id: pill.toLowerCase().replace(/\s+/g, "_"), label: pill })}
-          >
-            {pill}
-          </button>
-        ))}
       </div>
     </div>
   );

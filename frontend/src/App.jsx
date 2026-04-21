@@ -9,7 +9,7 @@ import Suppliers from "./pages/Suppliers";
 import Customers from "./pages/Customers";
 import Purchases from "./pages/Recent Purchases";
 import Sales from "./pages/Recent Sales";
-import ProgramFormPage from "./config-form/ProgramFormPage";
+import ProgramConfigApp from "./program-config-advantage/ProgramConfigApp";
 
 export default function App() {
   return (
@@ -25,7 +25,7 @@ export default function App() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/purchases" element={<Purchases />} />
           <Route path="/sales" element={<Sales />} />
-          <Route path="/program-config" element={<ProgramFormPage />} />
+          <Route path="/program-config" element={<ProgramConfigApp />} />
         </Route>
       </Routes>
     </Router>

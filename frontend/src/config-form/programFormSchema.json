@@ -1,4 +1,17 @@
 {
+  "external_datasources": {
+    "options_bundle_url": "https://codetest.advantageclub.co/appreciation_config/options",
+    "user_search_url_template": "https://codetest.advantageclub.co/appreciation_config/get_users_details?search={query}",
+    "use_backend_proxy": true,
+    "user_results_path": "users",
+    "user_id_field": "id",
+    "user_display_fields": ["full_name", "email"],
+    "source_key_map": {
+      "categories": "categories",
+      "user_attributes": "user_attributes",
+      "user_profile_attributes": "user_profile_attributes"
+    }
+  },
   "blocks": [
     {
       "block_id": "basic_information",
@@ -402,7 +415,7 @@
           "type": "text",
           "required": false,
           "placeholder": "Enter custom error message",
-          "ui": { "width": "full" }
+          "ui": { "width": "half" }
         }
       ]
     },
