@@ -1,4 +1,9 @@
 import type { BlockSchema, ExternalDatasourcesConfig, SchemaDoc } from "../config-form/types";
+import {
+  CONFIG_INHERITANCE_CUSTOM,
+  CONFIG_SCOPE_BLOCK_ID,
+  CONFIG_SCOPE_INHERITANCE_KEY,
+} from "../config-form/programFormLogic";
 import { advantageConfigBaseUrl } from "./env";
 import { advantageFetchJson } from "./http";
 
@@ -104,6 +109,7 @@ function buildExternalDatasources(): ExternalDatasourcesConfig {
       categories: "categories",
       user_attributes: "user_attributes",
       user_profile_attributes: "user_profile_attributes",
+      config_options: "config_options",
     },
   };
 }
@@ -125,15 +131,42 @@ function extractBlocksFromOptionsPayload(o: Record<string, unknown>): BlockSchem
   return [];
 }
 
+function buildConfigScopeBlock(): BlockSchema {
+  return {
+    block_id: CONFIG_SCOPE_BLOCK_ID,
+    title: "Configuration scope",
+    description:
+      "Controls which blocks appear for Corporate/Category vs Custom (see config_scope_visibility on each block in options JSON).",
+    layout: { columns: 1 },
+    config_scope_visibility: "always",
+    fields: [
+      {
+        key: CONFIG_SCOPE_INHERITANCE_KEY,
+        label: "Award configuration follows",
+        type: "select",
+        required: true,
+        options: { source: "config_options" },
+        default: CONFIG_INHERITANCE_CUSTOM,
+        placeholder: "Select…",
+        ui: { width: "full" },
+      },
+    ],
+  };
+}
+
 /**
  * Maps codetest `/appreciation_config/options` into {@link SchemaDoc}:
  * - `sections.blocks` → `blocks`
+ * - Prepends {@link CONFIG_SCOPE_BLOCK_ID} unless the API already defines it (select options from root {@code config_options})
  * - `categories` object id → label → select strings
  * - `user_attributes` / `user_profile_attributes` string arrays → select options
  */
 export function advantageOptionsToSchemaDoc(raw: unknown): SchemaDoc {
   const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  const blocks = extractBlocksFromOptionsPayload(o);
+  const apiBlocks = extractBlocksFromOptionsPayload(o);
+  const blocks = apiBlocks.some((b) => b.block_id === CONFIG_SCOPE_BLOCK_ID)
+    ? apiBlocks
+    : [buildConfigScopeBlock(), ...apiBlocks];
   return {
     blocks,
     external_datasources: buildExternalDatasources(),

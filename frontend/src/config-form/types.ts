@@ -15,12 +15,24 @@ export type SchemaDoc = {
   external_datasources?: ExternalDatasourcesConfig;
 };
 
+/**
+ * How a block relates to {@code config_scope.inheritance} (Corporate Wise / Category Wise vs Custom).
+ * Omit on a block → treated as {@code custom_only} (only shown when Custom is selected).
+ */
+export type BlockConfigScopeVisibility =
+  | "always"
+  | "custom_only"
+  | "inherited_and_custom"
+  | "inherited_only";
+
 export type BlockSchema = {
   block_id: string;
   title: string;
   description?: string;
   layout?: { columns?: number };
   fields: FieldSchema[];
+  /** Per-block visibility when configuration scope is Corporate/Category vs Custom. */
+  config_scope_visibility?: BlockConfigScopeVisibility;
 };
 
 export type ConditionSpec = {

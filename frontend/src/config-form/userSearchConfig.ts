@@ -49,14 +49,15 @@ export function parseRemoteUserSearchOptions(
   const src = o && typeof o.source === "string" ? o.source : "";
   const tmpl = external?.user_search_url_template?.trim();
   if (src === "users" && tmpl) {
+    const userDisplayFields = external?.user_display_fields;
     return {
       source: "users",
       search_url_template: tmpl,
       results_path: external?.user_results_path ?? "users",
       id_field: external?.user_id_field ?? "id",
       display_fields:
-        Array.isArray(external?.user_display_fields) && external.user_display_fields.length
-          ? external.user_display_fields.map(String)
+        Array.isArray(userDisplayFields) && userDisplayFields.length
+          ? userDisplayFields.map(String)
           : ["full_name", "email"],
       use_backend_proxy: external?.use_backend_proxy !== false,
     };

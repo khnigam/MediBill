@@ -200,7 +200,8 @@ export function FieldRenderer({
   }
 
   if (field.type === "file") {
-    const meta = value as { name?: string; size?: number } | null;
+    const meta = value as { name?: string; size?: number; existingUrl?: string; file?: File } | null;
+    const existingUrl = meta?.existingUrl?.trim();
     return wrap(
       <FieldShell label={field.label} required={field.required}>
         <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-600 hover:border-indigo-400 hover:bg-indigo-50/40">
@@ -220,12 +221,16 @@ export function FieldRenderer({
                 window.alert(`File must be at most ${maxMb}MB`);
                 return;
               }
-              set({ name: f.name, size: f.size });
+              set({ name: f.name, size: f.size, file: f });
             }}
           />
-          <span className="text-2xl" aria-hidden>
-            ☁
-          </span>
+          {existingUrl ? (
+            <img src={existingUrl} alt="" className="mb-3 max-h-32 max-w-full rounded-lg object-contain" />
+          ) : (
+            <span className="text-2xl" aria-hidden>
+              ☁
+            </span>
+          )}
           <span className="mt-2 font-medium">Drag and drop or click to upload</span>
           <span className="mt-1 text-xs text-gray-500">
             PNG, JPG, SVG up to {field.max_size_mb ?? 5}MB

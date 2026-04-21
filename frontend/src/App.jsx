@@ -10,6 +10,11 @@ import Customers from "./pages/Customers";
 import Purchases from "./pages/Recent Purchases";
 import Sales from "./pages/Recent Sales";
 import ProgramConfigApp from "./program-config-advantage/ProgramConfigApp";
+import ProgramAwardTypePage from "./program-config-advantage/ProgramAwardTypePage";
+import NonMonetaryAwardsListPage from "./program-config-advantage/NonMonetaryAwardsListPage";
+import MonetaryAwardsPlaceholderPage from "./program-config-advantage/MonetaryAwardsPlaceholderPage";
+import ProgramFormPage from "./config-form/ProgramFormPage";
+import ProgramConfigPreviewPage from "./program-config-advantage/ProgramConfigPreviewPage";
 
 export default function App() {
   return (
@@ -25,7 +30,13 @@ export default function App() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/purchases" element={<Purchases />} />
           <Route path="/sales" element={<Sales />} />
-          <Route path="/program-config" element={<ProgramConfigApp />} />
+          <Route path="/program-config" element={<ProgramConfigApp />}>
+            <Route index element={<ProgramAwardTypePage />} />
+            <Route path="non-monetary" element={<NonMonetaryAwardsListPage />} />
+            <Route path="monetary" element={<MonetaryAwardsPlaceholderPage />} />
+            <Route path="preview" element={<ProgramConfigPreviewPage />} />
+            <Route path="form" element={<ProgramFormPage />} />
+          </Route>
         </Route>
       </Routes>
     </Router>

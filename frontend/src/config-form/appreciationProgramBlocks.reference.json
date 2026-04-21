@@ -1,12 +1,21 @@
 {
-  "external_datasources": {
-    "options_bundle_url": "https://codetest.advantageclub.co/appreciation_config/options",
-    "user_search_url_template": "https://codetest.advantageclub.co/appreciation_config/get_users_details?search={query}",
-    "use_backend_proxy": true,
-    "user_results_path": "users",
-    "user_id_field": "id",
-    "user_display_fields": ["full_name", "email"],
-    "source_key_map": {
+  "meta": {
+    "purpose": "Reference for /appreciation_config/options: merge `blocks` into `sections.blocks` (or use as `sections` if your API returns a bare array).",
+    "required_root_keys": [
+      "config_options"
+    ],
+    "config_options": [
+      "Corporate Wise",
+      "Category Wise",
+      "Custom"
+    ],
+    "config_scope_visibility_values": [
+      "always",
+      "custom_only",
+      "inherited_and_custom",
+      "inherited_only"
+    ],
+    "external_datasources_source_key_map": {
       "categories": "categories",
       "user_attributes": "user_attributes",
       "user_profile_attributes": "user_profile_attributes",
@@ -19,17 +28,23 @@
       "config_scope_visibility": "always",
       "title": "Configuration scope",
       "description": "Corporate/Category vs Custom; pair with config_scope_visibility on each block.",
-      "layout": { "columns": 1 },
+      "layout": {
+        "columns": 1
+      },
       "fields": [
         {
           "key": "inheritance",
           "label": "Award configuration follows",
           "type": "select",
           "required": true,
-          "options": { "source": "config_options" },
+          "options": {
+            "source": "config_options"
+          },
           "default": "Custom",
           "placeholder": "Select…",
-          "ui": { "width": "full" }
+          "ui": {
+            "width": "full"
+          }
         }
       ]
     },
@@ -38,7 +53,9 @@
       "config_scope_visibility": "custom_only",
       "title": "Basic Information",
       "description": "Program name, category and display image",
-      "layout": { "columns": 2 },
+      "layout": {
+        "columns": 2
+      },
       "fields": [
         {
           "key": "name",
@@ -47,16 +64,25 @@
           "required": true,
           "placeholder": "Enter program name",
           "default": "",
-          "validation": { "min_length": 3, "max_length": 100 },
-          "ui": { "width": "full" }
+          "validation": {
+            "min_length": 3,
+            "max_length": 100
+          },
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "category",
           "label": "Category",
           "type": "select",
           "required": true,
-          "options": { "source": "categories" },
-          "ui": { "width": "half" }
+          "options": {
+            "source": "categories"
+          },
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "image",
@@ -65,7 +91,9 @@
           "required": true,
           "max_size_mb": 2,
           "multiple": false,
-          "ui": { "width": "half" }
+          "ui": {
+            "width": "half"
+          }
         }
       ]
     },
@@ -74,20 +102,30 @@
       "config_scope_visibility": "custom_only",
       "title": "Giver Eligibility",
       "description": "Controls who can give an appreciation.",
-      "layout": { "columns": 1 },
+      "layout": {
+        "columns": 1
+      },
       "fields": [
         {
           "key": "mode",
           "type": "switch",
           "required": true,
           "default": "all",
-          "options": ["all", "rules"],
-          "ui": { "position": "top-right" }
+          "options": [
+            "all",
+            "rules"
+          ],
+          "ui": {
+            "position": "top-right"
+          }
         },
         {
           "key": "rules",
           "type": "rule_builder",
-          "visible_if": { "field": "mode", "equals": "rules" },
+          "visible_if": {
+            "field": "mode",
+            "equals": "rules"
+          },
           "config": {
             "add_rule_label": "Add Rule",
             "add_sub_rule_label": "Add Condition"
@@ -96,46 +134,93 @@
             {
               "key": "type",
               "type": "select",
-              "options": ["user_attribute", "user_profile_attribute", "user_permission"]
+              "options": [
+                "user_attribute",
+                "user_profile_attribute",
+                "user_permission"
+              ]
             },
             {
               "key": "attribute",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "user_attribute" },
-              "options": { "source": "user_attributes" }
+              "depends_on": {
+                "field": "type",
+                "equals": "user_attribute"
+              },
+              "options": {
+                "source": "user_attributes"
+              }
             },
             {
               "key": "operator",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "user_attribute" },
-              "options": ["==", "!=", ">", "<", ">=", "<=", "in", "not_in"]
+              "depends_on": {
+                "field": "type",
+                "equals": "user_attribute"
+              },
+              "options": [
+                "==",
+                "!=",
+                ">",
+                "<",
+                ">=",
+                "<=",
+                "in",
+                "not_in"
+              ]
             },
             {
               "key": "value",
               "type": "text",
-              "depends_on": { "field": "type", "equals": "user_attribute" }
+              "depends_on": {
+                "field": "type",
+                "equals": "user_attribute"
+              }
             },
             {
               "key": "profile_attribute",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "user_profile_attribute" },
-              "options": { "source": "user_profile_attributes" }
+              "depends_on": {
+                "field": "type",
+                "equals": "user_profile_attribute"
+              },
+              "options": {
+                "source": "user_profile_attributes"
+              }
             },
             {
               "key": "profile_operator",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "user_profile_attribute" },
-              "options": ["==", "!=", ">", "<", ">=", "<=", "in", "not_in"]
+              "depends_on": {
+                "field": "type",
+                "equals": "user_profile_attribute"
+              },
+              "options": [
+                "==",
+                "!=",
+                ">",
+                "<",
+                ">=",
+                "<=",
+                "in",
+                "not_in"
+              ]
             },
             {
               "key": "profile_value",
               "type": "text",
-              "depends_on": { "field": "type", "equals": "user_profile_attribute" }
+              "depends_on": {
+                "field": "type",
+                "equals": "user_profile_attribute"
+              }
             },
             {
               "key": "permission",
               "type": "text",
-              "depends_on": { "field": "type", "equals": "user_permission" },
+              "depends_on": {
+                "field": "type",
+                "equals": "user_permission"
+              },
               "placeholder": "Enter permission name"
             }
           ]
@@ -147,7 +232,9 @@
       "config_scope_visibility": "custom_only",
       "title": "Block Rule",
       "description": "Blocks specific users by their IDs.",
-      "layout": { "columns": 1 },
+      "layout": {
+        "columns": 1
+      },
       "fields": [
         {
           "key": "user_ids",
@@ -155,7 +242,9 @@
           "type": "multi_select_search",
           "required": false,
           "placeholder": "Search and select users",
-          "options": { "source": "users" }
+          "options": {
+            "source": "users"
+          }
         }
       ]
     },
@@ -164,7 +253,9 @@
       "config_scope_visibility": "custom_only",
       "title": "Message Rules",
       "description": "Controls the appreciation message input: mandatory flag and character limits.",
-      "layout": { "columns": 2 },
+      "layout": {
+        "columns": 2
+      },
       "fields": [
         {
           "key": "isMandatory",
@@ -172,7 +263,9 @@
           "type": "switch",
           "required": false,
           "default": false,
-          "ui": { "position": "top-right" }
+          "ui": {
+            "position": "top-right"
+          }
         },
         {
           "key": "minLimit",
@@ -180,7 +273,9 @@
           "type": "number",
           "required": false,
           "default": 0,
-          "ui": { "width": "half" }
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "maxLimit",
@@ -188,7 +283,9 @@
           "type": "number",
           "required": false,
           "default": 500,
-          "ui": { "width": "half" }
+          "ui": {
+            "width": "half"
+          }
         }
       ]
     },
@@ -197,7 +294,9 @@
       "config_scope_visibility": "custom_only",
       "title": "Recipient Count Limits",
       "description": "Min/max/exact number of recipients per appreciation.",
-      "layout": { "columns": 2 },
+      "layout": {
+        "columns": 2
+      },
       "fields": [
         {
           "key": "exact_enabled",
@@ -205,15 +304,22 @@
           "type": "switch",
           "required": false,
           "default": false,
-          "ui": { "position": "top-right" }
+          "ui": {
+            "position": "top-right"
+          }
         },
         {
           "key": "exact",
           "label": "Exact Count",
           "type": "number",
           "required": false,
-          "visible_if": { "field": "exact_enabled", "equals": true },
-          "ui": { "width": "half" }
+          "visible_if": {
+            "field": "exact_enabled",
+            "equals": true
+          },
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "min",
@@ -221,8 +327,13 @@
           "type": "number",
           "required": false,
           "default": 1,
-          "visible_if": { "field": "exact_enabled", "equals": false },
-          "ui": { "width": "half" }
+          "visible_if": {
+            "field": "exact_enabled",
+            "equals": false
+          },
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "max",
@@ -230,8 +341,13 @@
           "type": "number",
           "required": false,
           "default": 50,
-          "visible_if": { "field": "exact_enabled", "equals": false },
-          "ui": { "width": "half" }
+          "visible_if": {
+            "field": "exact_enabled",
+            "equals": false
+          },
+          "ui": {
+            "width": "half"
+          }
         }
       ]
     },
@@ -240,19 +356,29 @@
       "config_scope_visibility": "custom_only",
       "title": "Receiver Eligibility (Award)",
       "description": "Checks if receiver is eligible for the selected award.",
-      "layout": { "columns": 1 },
+      "layout": {
+        "columns": 1
+      },
       "fields": [
         {
           "key": "mode",
           "type": "switch",
           "default": "all",
-          "options": ["all", "rules"],
-          "ui": { "position": "top-right" }
+          "options": [
+            "all",
+            "rules"
+          ],
+          "ui": {
+            "position": "top-right"
+          }
         },
         {
           "key": "rules",
           "type": "rule_builder",
-          "visible_if": { "field": "mode", "equals": "rules" },
+          "visible_if": {
+            "field": "mode",
+            "equals": "rules"
+          },
           "config": {
             "add_rule_label": "Add Rule",
             "add_sub_rule_label": "Add Condition"
@@ -261,41 +387,84 @@
             {
               "key": "type",
               "type": "select",
-              "options": ["user_attribute", "user_profile_attribute"]
+              "options": [
+                "user_attribute",
+                "user_profile_attribute"
+              ]
             },
             {
               "key": "attribute",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "user_attribute" },
-              "options": { "source": "user_attributes" }
+              "depends_on": {
+                "field": "type",
+                "equals": "user_attribute"
+              },
+              "options": {
+                "source": "user_attributes"
+              }
             },
             {
               "key": "operator",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "user_attribute" },
-              "options": ["==", "!=", ">", "<", ">=", "<=", "in", "not_in"]
+              "depends_on": {
+                "field": "type",
+                "equals": "user_attribute"
+              },
+              "options": [
+                "==",
+                "!=",
+                ">",
+                "<",
+                ">=",
+                "<=",
+                "in",
+                "not_in"
+              ]
             },
             {
               "key": "value",
               "type": "text",
-              "depends_on": { "field": "type", "equals": "user_attribute" }
+              "depends_on": {
+                "field": "type",
+                "equals": "user_attribute"
+              }
             },
             {
               "key": "profile_attribute",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "user_profile_attribute" },
-              "options": { "source": "user_profile_attributes" }
+              "depends_on": {
+                "field": "type",
+                "equals": "user_profile_attribute"
+              },
+              "options": {
+                "source": "user_profile_attributes"
+              }
             },
             {
               "key": "profile_operator",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "user_profile_attribute" },
-              "options": ["==", "!=", ">", "<", ">=", "<=", "in", "not_in"]
+              "depends_on": {
+                "field": "type",
+                "equals": "user_profile_attribute"
+              },
+              "options": [
+                "==",
+                "!=",
+                ">",
+                "<",
+                ">=",
+                "<=",
+                "in",
+                "not_in"
+              ]
             },
             {
               "key": "profile_value",
               "type": "text",
-              "depends_on": { "field": "type", "equals": "user_profile_attribute" }
+              "depends_on": {
+                "field": "type",
+                "equals": "user_profile_attribute"
+              }
             }
           ]
         }
@@ -306,19 +475,29 @@
       "config_scope_visibility": "custom_only",
       "title": "Giver → Receiver Eligibility",
       "description": "Controls if giver can appreciate a receiver.",
-      "layout": { "columns": 1 },
+      "layout": {
+        "columns": 1
+      },
       "fields": [
         {
           "key": "mode",
           "type": "switch",
           "default": "all",
-          "options": ["all", "rules"],
-          "ui": { "position": "top-right" }
+          "options": [
+            "all",
+            "rules"
+          ],
+          "ui": {
+            "position": "top-right"
+          }
         },
         {
           "key": "rules",
           "type": "rule_builder",
-          "visible_if": { "field": "mode", "equals": "rules" },
+          "visible_if": {
+            "field": "mode",
+            "equals": "rules"
+          },
           "config": {
             "add_rule_label": "Add Rule",
             "add_sub_rule_label": "Add Condition"
@@ -339,68 +518,150 @@
             {
               "key": "r_attribute",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "r_attr_vs_g_attr" },
-              "options": { "source": "user_attributes" }
+              "depends_on": {
+                "field": "type",
+                "equals": "r_attr_vs_g_attr"
+              },
+              "options": {
+                "source": "user_attributes"
+              }
             },
             {
               "key": "g_attribute",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "r_attr_vs_g_attr" },
-              "options": { "source": "user_attributes" }
+              "depends_on": {
+                "field": "type",
+                "equals": "r_attr_vs_g_attr"
+              },
+              "options": {
+                "source": "user_attributes"
+              }
             },
             {
               "key": "operator_r_g_attr",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "r_attr_vs_g_attr" },
-              "options": ["eq_cs", "neq_cs", "gt", "lt", "gte", "lte", "eq_ncs", "neq_ncs"]
+              "depends_on": {
+                "field": "type",
+                "equals": "r_attr_vs_g_attr"
+              },
+              "options": [
+                "eq_cs",
+                "neq_cs",
+                "gt",
+                "lt",
+                "gte",
+                "lte",
+                "eq_ncs",
+                "neq_ncs"
+              ]
             },
             {
               "key": "r_attribute_profile",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "r_attr_vs_g_profile" },
-              "options": { "source": "user_attributes" }
+              "depends_on": {
+                "field": "type",
+                "equals": "r_attr_vs_g_profile"
+              },
+              "options": {
+                "source": "user_attributes"
+              }
             },
             {
               "key": "g_profile",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "r_attr_vs_g_profile" },
-              "options": { "source": "user_profile_attributes" }
+              "depends_on": {
+                "field": "type",
+                "equals": "r_attr_vs_g_profile"
+              },
+              "options": {
+                "source": "user_profile_attributes"
+              }
             },
             {
               "key": "operator_r_g_profile",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "r_attr_vs_g_profile" },
-              "options": ["eq_cs", "neq_cs", "gt", "lt", "gte", "lte", "eq_ncs", "neq_ncs"]
+              "depends_on": {
+                "field": "type",
+                "equals": "r_attr_vs_g_profile"
+              },
+              "options": [
+                "eq_cs",
+                "neq_cs",
+                "gt",
+                "lt",
+                "gte",
+                "lte",
+                "eq_ncs",
+                "neq_ncs"
+              ]
             },
             {
               "key": "g_attribute_profile",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "g_attr_vs_r_profile" },
-              "options": { "source": "user_attributes" }
+              "depends_on": {
+                "field": "type",
+                "equals": "g_attr_vs_r_profile"
+              },
+              "options": {
+                "source": "user_attributes"
+              }
             },
             {
               "key": "r_profile",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "g_attr_vs_r_profile" },
-              "options": { "source": "user_profile_attributes" }
+              "depends_on": {
+                "field": "type",
+                "equals": "g_attr_vs_r_profile"
+              },
+              "options": {
+                "source": "user_profile_attributes"
+              }
             },
             {
               "key": "operator_g_r_profile",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "g_attr_vs_r_profile" },
-              "options": ["eq_cs", "neq_cs", "gt", "lt", "gte", "lte", "eq_ncs", "neq_ncs"]
+              "depends_on": {
+                "field": "type",
+                "equals": "g_attr_vs_r_profile"
+              },
+              "options": [
+                "eq_cs",
+                "neq_cs",
+                "gt",
+                "lt",
+                "gte",
+                "lte",
+                "eq_ncs",
+                "neq_ncs"
+              ]
             },
             {
               "key": "hierarchy_type",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "hierarchy" },
-              "options": ["manager_id", "manager_employeeID", "hrbp_manager", "bu_head"]
+              "depends_on": {
+                "field": "type",
+                "equals": "hierarchy"
+              },
+              "options": [
+                "manager_id",
+                "manager_employeeID",
+                "hrbp_manager",
+                "bu_head"
+              ]
             },
             {
               "key": "direct_type",
               "type": "select",
-              "depends_on": { "field": "type", "equals": "direct" },
-              "options": ["manager_id", "manager_employeeID", "hrbp_manager", "bu_head"]
+              "depends_on": {
+                "field": "type",
+                "equals": "direct"
+              },
+              "options": [
+                "manager_id",
+                "manager_employeeID",
+                "hrbp_manager",
+                "bu_head"
+              ]
             }
           ]
         }
@@ -411,7 +672,9 @@
       "config_scope_visibility": "custom_only",
       "title": "Tenure Rules",
       "description": "Minimum tenure (in months) required for the giver to appreciate.",
-      "layout": { "columns": 2 },
+      "layout": {
+        "columns": 2
+      },
       "fields": [
         {
           "key": "months_min",
@@ -419,23 +682,32 @@
           "type": "number",
           "required": false,
           "default": 0,
-          "ui": { "width": "half" }
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "months_max",
           "label": "Maximum Months",
           "type": "number",
           "required": false,
-          "ui": { "width": "half" }
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "user_field_option",
           "label": "Tenure Based On",
           "type": "select",
           "required": false,
-          "options": ["service_referenced_date", "joining_date"],
+          "options": [
+            "service_referenced_date",
+            "joining_date"
+          ],
           "placeholder": "Select an option",
-          "ui": { "width": "half" }
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "error_message",
@@ -443,7 +715,9 @@
           "type": "text",
           "required": false,
           "placeholder": "Enter custom error message",
-          "ui": { "width": "half" }
+          "ui": {
+            "width": "half"
+          }
         }
       ]
     },
@@ -452,28 +726,36 @@
       "config_scope_visibility": "custom_only",
       "title": "Citation Character Limit",
       "description": "Maximum character length for the citation / reason field.",
-      "layout": { "columns": 2 },
+      "layout": {
+        "columns": 2
+      },
       "fields": [
         {
           "key": "isMandatory",
           "label": "Mandatory",
           "type": "switch",
           "default": false,
-          "ui": { "position": "top-right" }
+          "ui": {
+            "position": "top-right"
+          }
         },
         {
           "key": "min_length",
           "label": "Minimum Length",
           "type": "number",
           "required": false,
-          "ui": { "width": "half" }
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "max_length",
           "label": "Maximum Length",
           "type": "number",
           "required": false,
-          "ui": { "width": "half" }
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "error_message",
@@ -481,7 +763,9 @@
           "type": "text",
           "required": false,
           "placeholder": "Enter custom error message",
-          "ui": { "width": "full" }
+          "ui": {
+            "width": "full"
+          }
         }
       ]
     },
@@ -490,14 +774,18 @@
       "config_scope_visibility": "custom_only",
       "title": "Media Upload Limits",
       "description": "Min and max file counts per media type.",
-      "layout": { "columns": 1 },
+      "layout": {
+        "columns": 1
+      },
       "fields": [
         {
           "key": "isMandatory",
           "label": "Mandatory",
           "type": "switch",
           "default": false,
-          "ui": { "position": "top-right" }
+          "ui": {
+            "position": "top-right"
+          }
         },
         {
           "key": "audio",
@@ -509,14 +797,18 @@
               "label": "Min",
               "type": "number",
               "default": 0,
-              "ui": { "width": "half" }
+              "ui": {
+                "width": "half"
+              }
             },
             {
               "key": "max_count",
               "label": "Max",
               "type": "number",
               "default": 2,
-              "ui": { "width": "half" }
+              "ui": {
+                "width": "half"
+              }
             }
           ]
         },
@@ -530,14 +822,18 @@
               "label": "Min",
               "type": "number",
               "default": 0,
-              "ui": { "width": "half" }
+              "ui": {
+                "width": "half"
+              }
             },
             {
               "key": "max_count",
               "label": "Max",
               "type": "number",
               "default": 5,
-              "ui": { "width": "half" }
+              "ui": {
+                "width": "half"
+              }
             }
           ]
         },
@@ -551,14 +847,18 @@
               "label": "Min",
               "type": "number",
               "default": 0,
-              "ui": { "width": "half" }
+              "ui": {
+                "width": "half"
+              }
             },
             {
               "key": "max_count",
               "label": "Max",
               "type": "number",
               "default": 1,
-              "ui": { "width": "half" }
+              "ui": {
+                "width": "half"
+              }
             }
           ]
         },
@@ -572,14 +872,18 @@
               "label": "Min",
               "type": "number",
               "default": 0,
-              "ui": { "width": "half" }
+              "ui": {
+                "width": "half"
+              }
             },
             {
               "key": "max_count",
               "label": "Max",
               "type": "number",
               "default": 3,
-              "ui": { "width": "half" }
+              "ui": {
+                "width": "half"
+              }
             }
           ]
         }
@@ -590,44 +894,62 @@
       "config_scope_visibility": "custom_only",
       "title": "Greeting (Monetary Add-on)",
       "description": "Allows attaching a monetary greeting amount to a non-monetary appreciation.",
-      "layout": { "columns": 2 },
+      "layout": {
+        "columns": 2
+      },
       "fields": [
         {
           "key": "split",
           "label": "Split Amount",
           "type": "switch",
           "default": true,
-          "ui": { "position": "top-right" }
+          "ui": {
+            "position": "top-right"
+          }
         },
         {
           "key": "min_total",
           "label": "Minimum Total",
           "type": "number",
           "required": false,
-          "ui": { "width": "half" }
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "max_total",
           "label": "Maximum Total",
           "type": "number",
           "required": false,
-          "ui": { "width": "half" }
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "min_per_recipient",
           "label": "Min per Recipient",
           "type": "number",
           "required": false,
-          "depends_on": { "field": "split", "equals": true },
-          "ui": { "width": "half" }
+          "depends_on": {
+            "field": "split",
+            "equals": true
+          },
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "max_per_recipient",
           "label": "Max per Recipient",
           "type": "number",
           "required": false,
-          "depends_on": { "field": "split", "equals": true },
-          "ui": { "width": "half" }
+          "depends_on": {
+            "field": "split",
+            "equals": true
+          },
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "error_message",
@@ -635,7 +957,9 @@
           "type": "text",
           "required": false,
           "placeholder": "Enter custom error message",
-          "ui": { "width": "full" }
+          "ui": {
+            "width": "full"
+          }
         }
       ]
     },
@@ -644,14 +968,18 @@
       "config_scope_visibility": "inherited_and_custom",
       "title": "Team Appreciation",
       "description": "Controls team-level appreciation behavior.",
-      "layout": { "columns": 2 },
+      "layout": {
+        "columns": 2
+      },
       "fields": [
         {
           "key": "enabled",
           "label": "Enable",
           "type": "switch",
           "default": false,
-          "ui": { "position": "top-right" }
+          "ui": {
+            "position": "top-right"
+          }
         },
         {
           "key": "exact_enabled",
@@ -659,34 +987,64 @@
           "type": "switch",
           "required": false,
           "default": false,
-          "depends_on": { "field": "enabled", "equals": true },
-          "ui": { "width": "full" }
+          "depends_on": {
+            "field": "enabled",
+            "equals": true
+          },
+          "ui": {
+            "width": "full"
+          }
         },
         {
           "key": "exact",
           "label": "Exact Count",
           "type": "number",
           "required": false,
-          "depends_on": { "field": "enabled", "equals": true },
-          "visible_if": { "field": "exact_enabled", "equals": true },
-          "ui": { "width": "half" ,"position": "top-right"}
+          "depends_on": {
+            "field": "enabled",
+            "equals": true
+          },
+          "visible_if": {
+            "field": "exact_enabled",
+            "equals": true
+          },
+          "ui": {
+            "width": "half",
+            "position": "top-right"
+          }
         },
         {
           "key": "min_receivers",
           "label": "Minimum",
           "type": "number",
           "default": 2,
-          "depends_on": { "field": "enabled", "equals": true },
-          "visible_if": { "field": "exact_enabled", "equals": false },
-          "ui": { "width": "half" }
+          "depends_on": {
+            "field": "enabled",
+            "equals": true
+          },
+          "visible_if": {
+            "field": "exact_enabled",
+            "equals": false
+          },
+          "ui": {
+            "width": "half"
+          }
         },
         {
           "key": "max_receivers",
           "label": "Maximum",
           "type": "number",
-          "depends_on": { "field": "enabled", "equals": true },
-          "visible_if": { "field": "exact_enabled", "equals": false },
-          "ui": { "width": "half" }
+          "depends_on": {
+            "field": "enabled",
+            "equals": true
+          },
+          "visible_if": {
+            "field": "exact_enabled",
+            "equals": false
+          },
+          "ui": {
+            "width": "half"
+          }
         }
       ]
     }

@@ -1,4 +1,8 @@
+import { Outlet } from "react-router-dom";
+
 /**
- * Entry for the program configuration UI — wired only to Advantage codetest (see `schemaApi` + this folder).
+ * Program configuration area — nested routes: award type, non-monetary list, preview, and form.
  */
-export { default } from "../config-form/ProgramFormPage";
+export default function ProgramConfigApp() {
+  return <Outlet />;
+}
