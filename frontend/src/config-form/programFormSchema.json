@@ -37,7 +37,7 @@
       "block_id": "basic_information",
       "config_scope_visibility": "custom_only",
       "title": "Basic Information",
-      "description": "Program name, category and display image",
+      "description": "Program name and display image (category comes from list URL when category mode is on).",
       "layout": { "columns": 2 },
       "fields": [
         {
@@ -49,14 +49,6 @@
           "default": "",
           "validation": { "min_length": 3, "max_length": 100 },
           "ui": { "width": "full" }
-        },
-        {
-          "key": "category",
-          "label": "Category",
-          "type": "select",
-          "required": true,
-          "options": { "source": "categories" },
-          "ui": { "width": "half" }
         },
         {
           "key": "image",

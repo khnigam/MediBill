@@ -13,6 +13,7 @@ import ProgramConfigApp from "./program-config-advantage/ProgramConfigApp";
 import ProgramAwardTypePage from "./program-config-advantage/ProgramAwardTypePage";
 import NonMonetaryAwardsListPage from "./program-config-advantage/NonMonetaryAwardsListPage";
 import MonetaryAwardsPlaceholderPage from "./program-config-advantage/MonetaryAwardsPlaceholderPage";
+import NominationAwardsPlaceholderPage from "./program-config-advantage/NominationAwardsPlaceholderPage";
 import ProgramFormPage from "./config-form/ProgramFormPage";
 import ProgramConfigPreviewPage from "./program-config-advantage/ProgramConfigPreviewPage";
 
@@ -34,6 +35,7 @@ export default function App() {
             <Route index element={<ProgramAwardTypePage />} />
             <Route path="non-monetary" element={<NonMonetaryAwardsListPage />} />
             <Route path="monetary" element={<MonetaryAwardsPlaceholderPage />} />
+            <Route path="nomination" element={<NominationAwardsPlaceholderPage />} />
             <Route path="preview" element={<ProgramConfigPreviewPage />} />
             <Route path="form" element={<ProgramFormPage />} />
           </Route>

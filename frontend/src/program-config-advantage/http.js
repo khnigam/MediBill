@@ -1,24 +1,21 @@
 import { advantageConfigBaseUrl, advantageConfigToken } from "./env";
-
-export function advantageAuthHeaders(): HeadersInit {
+function advantageAuthHeaders() {
   const t = advantageConfigToken();
-  const h: Record<string, string> = {
-    Accept: "application/json",
+  const h = {
+    Accept: "application/json"
   };
   if (t) {
     h.token = `${t}`;
   }
   return h;
 }
-
-function resolveAdvantageUrl(pathOrUrl: string): string {
+function resolveAdvantageUrl(pathOrUrl) {
   const base = advantageConfigBaseUrl();
   if (pathOrUrl.startsWith("http")) return pathOrUrl;
   const path = pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`;
   return `${base}${path}`;
 }
-
-export async function advantageFetchJson(pathOrUrl: string): Promise<unknown> {
+async function advantageFetchJson(pathOrUrl) {
   const url = resolveAdvantageUrl(pathOrUrl);
   const res = await fetch(url, { headers: advantageAuthHeaders() });
   if (!res.ok) {
@@ -26,9 +23,7 @@ export async function advantageFetchJson(pathOrUrl: string): Promise<unknown> {
   }
   return res.json();
 }
-
-/** POST JSON to codetest; parses JSON body when Content-Type is JSON, else returns null. */
-export async function advantagePostJson(pathOrUrl: string, body: unknown): Promise<unknown> {
+async function advantagePostJson(pathOrUrl, body) {
   const url = resolveAdvantageUrl(pathOrUrl);
   const headers = new Headers(advantageAuthHeaders());
   headers.set("Content-Type", "application/json");
@@ -41,7 +36,29 @@ export async function advantagePostJson(pathOrUrl: string, body: unknown): Promi
   }
   const ct = res.headers.get("content-type") ?? "";
   if (ct.includes("application/json")) {
-    return res.json() as Promise<unknown>;
+    return res.json();
   }
   return null;
 }
+async function advantagePostMultipart(pathOrUrl, formData) {
+  const url = resolveAdvantageUrl(pathOrUrl);
+  const headers = new Headers(advantageAuthHeaders());
+  const res = await fetch(url, { method: "POST", headers, body: formData });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      `Advantage API ${res.status} ${res.statusText}: ${text.slice(0, 240) || url}`
+    );
+  }
+  const ct = res.headers.get("content-type") ?? "";
+  if (ct.includes("application/json")) {
+    return res.json();
+  }
+  return null;
+}
+export {
+  advantageAuthHeaders,
+  advantageFetchJson,
+  advantagePostJson,
+  advantagePostMultipart
+};

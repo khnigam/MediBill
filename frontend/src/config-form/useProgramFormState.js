@@ -1,19 +1,15 @@
 import { useCallback, useMemo, useState } from "react";
-import type { BlockSchema, FormState } from "./types";
 import { buildInitialFormState, hydrateFormStateFromMergedConfig, setAtPath } from "./programFormLogic";
-
-export function useProgramFormState() {
-  const [formState, setFormState] = useState<FormState>({});
-
+function useProgramFormState() {
+  const [formState, setFormState] = useState({});
   const reset = useCallback(
-    (nextBlocks: BlockSchema[]) => {
+    (nextBlocks) => {
       setFormState(buildInitialFormState(nextBlocks));
     },
     []
   );
-
   const initializeFromSchemaAndMerged = useCallback(
-    (blocks: BlockSchema[], merged: Record<string, unknown>, opts?: { defaultAwardName?: string }) => {
+    (blocks, merged, opts) => {
       let state = hydrateFormStateFromMergedConfig(merged, blocks);
       const n = opts?.defaultAwardName?.trim();
       if (n) {
@@ -27,9 +23,8 @@ export function useProgramFormState() {
     },
     []
   );
-
   const setBlockPath = useCallback(
-    (blockId: string, path: string[], value: unknown) => {
+    (blockId, path, value) => {
       setFormState((prev) => {
         const block = prev[blockId] ?? {};
         const nextBlock = setAtPath({ ...block }, path, value);
@@ -38,15 +33,17 @@ export function useProgramFormState() {
     },
     []
   );
-
   return useMemo(
     () => ({
       formState,
       setFormState,
       reset,
       initializeFromSchemaAndMerged,
-      setBlockPath,
+      setBlockPath
     }),
     [formState, reset, initializeFromSchemaAndMerged, setBlockPath]
   );
 }
+export {
+  useProgramFormState
+};
